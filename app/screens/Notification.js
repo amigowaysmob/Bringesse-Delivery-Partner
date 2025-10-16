@@ -1,10 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
+  View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity,
 } from 'react-native';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
@@ -18,6 +14,7 @@ import { fetchData } from '../api/api';
 import { useSelector } from 'react-redux';
 import DeviceInfo from 'react-native-device-info';
 import moment from 'moment';
+import { useNavigation } from '@react-navigation/native';
 
 const Notification = () => {
   const { theme } = useTheme();
@@ -31,6 +28,7 @@ const Notification = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  const navigation = useNavigation();
   const limit = 10;
 
   const fetchNotifications = useCallback(async (pageNumber = 1) => {
@@ -47,23 +45,20 @@ const Notification = () => {
       driver_id: profile.driver_id,
       device_id: deviceId,
     };
-
     try {
       if (pageNumber === 1) {
         setLoading(true);
       } else {
         setFetchingMore(true);
       }
-
       const data = await fetchData('notification', 'POST', payload, headers);
-
       if (data?.status === 'true' && Array.isArray(data.result)) {
         if (pageNumber === 1) {
           setNotificationData(data.result);
+          console.log(data.result[0], "data.result")
         } else {
           setNotificationData(prev => [...prev, ...data.result]);
         }
-
         setHasMore(data.result.length >= limit);
       } else {
         if (pageNumber === 1) setNotificationData([]);
@@ -102,28 +97,50 @@ const Notification = () => {
     return moment(dateStr).fromNow(); // e.g., "2 hours ago"
   };
 
-  const renderItem = ({ item }) => (
-    <View style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}>
-      <View style={styles.iconContainer}>
-        <MaterialCommunityIcon
-          name="bell-ring"
-          size={wp(7)}
-          color={COLORS[theme].accent}
-        />
+  const renderItem = ({ item }) => {
+    return (
+      <View style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}>
+        <View style={styles.iconContainer}>
+          <MaterialCommunityIcon
+            name={item?.notification_type == "booking" ? "truck" : "bell-ring"}
+            size={wp(7)}
+            color={COLORS[theme].accent}
+          />
+        </View>
+
+        <View style={styles.textContainer}>
+          <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
+            {item.store_name || t('new_notification')}
+          </Text>
+
+          <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
+            {item.message || 'You have a new notification.'}
+          </Text>
+
+          <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1.5) }]}>
+            {formatDate(item.date)}
+          </Text>
+        </View>
+        {item?.notification_type === "booking" && (
+          <TouchableOpacity onPress={() => navigation.navigate('BookingAction', { bid: item?.booking_id })}>
+            <Text style={[
+              poppins.regular.h8,
+              {
+                color: COLORS[theme].textPrimary,
+                marginTop: wp(1),
+                backgroundColor: COLORS[theme].accent,
+                padding: wp(2),
+                borderRadius: wp(2),
+              }
+            ]}>
+              {'View Bookings'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
-      <View style={styles.textContainer}>
-        <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
-          {item.store_name || t('new_notification')}
-        </Text>
-        <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-          {item.message || 'You have a new notification.'}
-        </Text>
-        <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1.5) }]}>
-          {formatDate(item.date)}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  };
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -137,7 +154,7 @@ const Notification = () => {
           <FlatList
             data={notificationData}
             keyExtractor={(item, index) => item.notification_id?.toString() || index.toString()}
-            renderItem={renderItem}
+            renderItem={({ item }) => renderItem({ item, navigation })}
             contentContainerStyle={styles.scrollContent}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.4}

@@ -13,6 +13,7 @@ import SubscriptionList from '../screens/SubscriptionList';
 import UpdateProfilePic from '../screens/UpdateProfilePic';
 import ChangePassword from '../screens/tabs/Edit-profile/ChangePassword';
 import TermsandCondtions from '../screens/TermsandCondtions';
+import BookingAction from '../screens/BookingAction';
 const Stack = createNativeStackNavigator();
 const MyTheme = {
   dark: true,
@@ -49,8 +50,7 @@ function InitialRouter() {
         <Stack.Screen name="SubscriptionList" component={SubscriptionList} />
         <Stack.Screen name="ChangePassword" component={ChangePassword} />
         <Stack.Screen name="TermsAndCondtions" component={TermsandCondtions} />
-
-        
+        <Stack.Screen name="BookingAction" component={BookingAction} />
       </Stack.Navigator>
 
     </NavigationContainer>

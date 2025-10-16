@@ -105,7 +105,11 @@ const LoginScreen = () => {
                 type: 'success',
               });
               // Navigate
-              navigation.replace('home-screen');
+              // navigation.reset('home-screen');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'home-screen' }],
+              });
             } catch (error) {
               console.error('AsyncStorage error:', error);
             }

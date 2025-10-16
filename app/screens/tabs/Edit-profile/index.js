@@ -40,6 +40,7 @@ const PersonalInfoScreen = () => {
   });
 
   useEffect(() => {
+    console?.log(profileDetails, "profileDetails")
     const allServices = siteDetails?.service_type || [];
     if (!formValues.transportOptions.length) {
       setServiceTypes([]);
@@ -232,12 +233,24 @@ const PersonalInfoScreen = () => {
   }, [profileDetails]);
 
   useEffect(() => {
+
+
+    // profileDetails?.vehicle_category
+    // Assuming profileDetails?.vehicle_category is defined
+    const filteredVehicles = siteDetails?.vehicle_type?.filter(vehicle =>
+      vehicle.category === profileDetails?.vehicle_category
+    ) || [];  // Fallback to empty array if vehicle_type is undefined
+
+    // Set the vehicle types after mapping the filtered array
     setVehicleTypes(
-      siteDetails?.vehicle_type?.map(vehicle => ({
+      filteredVehicles.map(vehicle => ({
         label: vehicle.name,
-        value: vehicle._id,
-      })) || []
+        value: vehicle._id
+      })) || []  // Fallback in case the map operation produces undefined
     );
+    console?.log(vehicleTypes, "siteDetails?.vehicle_type")
+
+
     setVehicleCategories(
       siteDetails?.vehicle_category?.map(category => ({
         label: category.name,
@@ -284,10 +297,10 @@ const PersonalInfoScreen = () => {
     <View style={styles.fieldContainer}>
       <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>{label}</Text>
       <TextInput
-        maxLength={35}
+        maxLength={label == 'Vehicle Number' ? 10 : 35}
         mode="outlined"
-        placeholder={label}    
-            value={value}
+        placeholder={label}
+        value={value}
         style={styles.input}
         onChangeText={onChangeText}
         outlineColor={error ? 'red' : COLORS[theme].textInputBorder}

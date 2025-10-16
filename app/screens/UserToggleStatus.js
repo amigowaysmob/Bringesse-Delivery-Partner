@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View, Text, Switch, StyleSheet, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -17,6 +17,7 @@ const UserToggleStatus = () => {
     const { t } = useTranslation();
     const dispatch = useDispatch();
     const profileDetails = useSelector(state => state.Auth.profileDetails);
+  const mapRef = useRef(null);
     
     useEffect(() => {
         fetchProfileData();

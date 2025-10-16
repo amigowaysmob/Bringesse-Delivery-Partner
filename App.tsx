@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   BackHandler,
@@ -17,8 +17,6 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import NetInfo from '@react-native-community/netinfo';
 import { Provider } from 'react-redux';
 import { store as configureStore } from 'react-boilerplate-redux-saga-hoc';
-import FlashMessage from "react-native-flash-message";
-
 import {
   PaperProvider,
   DefaultTheme,
@@ -26,15 +24,14 @@ import {
   MD2LightTheme,
   MD2DarkTheme,
 } from 'react-native-paper';
-
 import InitialRouter from './app/navigation/initial_router';
 import { fontConfig } from './app/resources/fonts';
 import { COLORS } from './app/resources/colors';
 import { ThemeProvider, useTheme } from './app/context/ThemeContext';
 import { LanguageProvider } from './app/context/LanguageContext';
-
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import i18n from './app/config/i18';
+import InAppNotification from './app/screens/InAppNotification';
 
 if (Text.defaultProps == null) {
   Text.defaultProps = {};
@@ -76,7 +73,7 @@ const darkTheme = {
 };
 
 function App(): React.JSX.Element {
-  const [network, setNetwork] = React.useState(false);
+  const [network, setNetwork] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -121,19 +118,21 @@ function App(): React.JSX.Element {
     );
   };
 
+  const [pendingNotification, setPendingNotification] = useState<any>(null);
+
   useEffect(() => {
     checkPushNotificationPermission();
 
-    // 🔁 Handle FCM foreground messages
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      const hasNotificationPayload = !!remoteMessage.notification;
-      // console.log(remoteMessage.data);
-      // 🛑 Prevent duplicate if notification payload exists (Firebase will auto-show it)
-      if (!hasNotificationPayload) {
-        const title = remoteMessage.data?.scope || 'Default Title';
-        const body = remoteMessage.data?.message || 'Default Body';
-        onDisplayNotification({ title, body });
-      }
+      console.log('FCM Data:', JSON.stringify(remoteMessage, null, 2));
+
+      const data = remoteMessage.data || {};
+
+      setPendingNotification(data);
+
+      const title = data.scope || 'Notification';
+      const body = data.message || 'You have a new message.';
+      await onDisplayNotification({ title, body });
     });
 
     return unsubscribe;
@@ -172,7 +171,7 @@ function App(): React.JSX.Element {
       body,
       android: {
         channelId,
-        smallIcon: 'ic_launcher', // Ensure this exists in res/drawable
+        smallIcon: 'ic_launcher',
         pressAction: {
           id: 'default',
         },
@@ -180,16 +179,29 @@ function App(): React.JSX.Element {
     });
   }
 
+  const handleCloseNotification = () => {
+    setPendingNotification(null);
+  };
+
   return (
     <ThemeProvider>
       <SafeAreaProvider>
-        <AppContainer />
+        <AppContainer
+          pendingNotification={pendingNotification}
+          onCloseNotification={handleCloseNotification}
+        />
       </SafeAreaProvider>
     </ThemeProvider>
   );
 }
 
-const AppContainer = () => {
+const AppContainer = ({
+  pendingNotification,
+  onCloseNotification,
+}: {
+  pendingNotification: any;
+  onCloseNotification: () => void;
+}) => {
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
@@ -215,6 +227,14 @@ const AppContainer = () => {
           >
             <Provider store={store}>
               <I18nextProvider i18n={i18n}>
+                {pendingNotification && (
+                  <InAppNotification
+                    title={pendingNotification.scope || 'Notification'}
+                    body={pendingNotification.message || 'You have a new message.'}
+                    data={JSON.stringify(pendingNotification, null, 2)}
+                    onClose={onCloseNotification}
+                  />
+                )}
                 <InitialRouter />
               </I18nextProvider>
             </Provider>

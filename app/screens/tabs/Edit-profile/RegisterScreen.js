@@ -270,7 +270,11 @@ const RegisterScreen = () => {
                     });
                     // Navigate
                     setTimeout(() => {
-                        navigation.replace('home-screen');
+                        // navigation.replace('home-screen');
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'home-screen' }],
+                          });
                     }, 2000);
                 } else {
                     ToastAndroid.show(userDatas?.message, ToastAndroid.SHORT);

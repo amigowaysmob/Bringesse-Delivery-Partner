@@ -18,6 +18,8 @@ import { useSelector } from 'react-redux';
 import UerProfileCard from '../../UerProfileCard';
 import messaging from '@react-native-firebase/messaging';
 import DeviceInfo from 'react-native-device-info';
+import { Text } from 'react-native-paper';
+import { poppins } from '../../../resources/fonts';
 
 const HomeScreen = () => {
   const { theme } = useTheme();
@@ -25,6 +27,9 @@ const HomeScreen = () => {
   const [location, setLocation] = useState(null);
   const mapRef = useRef(null);
   const profile = useSelector(state => state?.Auth?.profile);
+  const profileDetails = useSelector(state => state.Auth.profileDetails);
+
+
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') {
       return true; // iOS permissions handled via Info.plist
@@ -45,24 +50,23 @@ const HomeScreen = () => {
     }
   };
 
-    // Get FCM token and device ID on mount
-    useEffect(() => {
-      const init = async () => {
-        try {
-          const token = await messaging().getToken();
-          const id = await DeviceInfo.getUniqueId();
-          // Alert.alert(JSON.stringify(token));
-          console.log("FCM TOKEN",JSON.stringify(token));
-
-          // setFcmToken(token);
-          // setDeviceId(id);
-        } catch (error) {
-          // console.error('Error fetching device info:', error);
-          Alert.alert(JSON.stringify(error));
-        }
-      };
-      init();
-    }, []);
+  // Get FCM token and device ID on mount
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = await messaging().getToken();
+        const id = await DeviceInfo.getUniqueId();
+        // Alert.alert(JSON.stringify(token));
+        console.log("FCM TOKEN", JSON.stringify(token));
+        // setFcmToken(token);
+        // setDeviceId(id);
+      } catch (error) {
+        // console.error('Error fetching device info:', error);
+        Alert.alert(JSON.stringify(error));
+      }
+    };
+    init();
+  }, []);
   const centerMapToLocation = () => {
     // alert('Centering to current location');
     if (location && mapRef.current) {
@@ -122,13 +126,15 @@ const HomeScreen = () => {
           }}
           showsUserLocation={true}
           showsMyLocationButton={false} // We'll use our custom one
-
         >
           <Marker coordinate={location}>
             <Image
               source={IMAGE_ASSETS?.scooter}
               style={{ width: wp(10), height: wp(10) }}
             />
+            <Text style={[poppins.semi_bold.h9, {
+              backgroundColor: "yellow",color:"#000",padding:wp(0.5),borderWidth:wp(0.3)
+            }]}>{profileDetails?.vehicle_no}</Text>
           </Marker>
         </MapView>
       )}
@@ -137,7 +143,7 @@ const HomeScreen = () => {
         style={[styles.centerButton, {
           backgroundColor: COLORS[theme].accent,
           bottom:
-           hp(30)
+            hp(30)
         }]}
       >
         <MaterialCommunityIcon
@@ -171,9 +177,7 @@ const styles = StyleSheet.create({
   centerIcon: {
     width: wp(6),
     height: wp(6),
-    // tintColor: COLORS.primary, // Adjust as per your theme/colors
   },
-
   map: {
     width: wp(100),
     height: hp(100),
