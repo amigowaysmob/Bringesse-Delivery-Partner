@@ -121,12 +121,12 @@ const Notification = () => {
             {formatDate(item.date)}
           </Text>
         </View>
-        {item?.notification_type === "booking" && (
+        {/* {item?.notification_type === "booking" && (
           <TouchableOpacity onPress={() => navigation.navigate('BookingAction', { bid: item?.booking_id })}>
             <Text style={[
               poppins.regular.h8,
               {
-                color: COLORS[theme].textPrimary,
+                color: COLORS[theme].white,
                 marginTop: wp(1),
                 backgroundColor: COLORS[theme].accent,
                 padding: wp(2),
@@ -136,7 +136,7 @@ const Notification = () => {
               {'View Bookings'}
             </Text>
           </TouchableOpacity>
-        )}
+        )} */}
       </View>
     );
   };

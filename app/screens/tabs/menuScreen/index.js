@@ -80,7 +80,7 @@ const ThemeSection = () => {
             color={COLORS[theme].textPrimary}
           />
           <Text style={[poppins.medium.h7, { color: COLORS[theme].textPrimary }]}>
-            {t('dark_mode')}
+            {t('Dark mode')}
           </Text>
         </View>
         <ToggleTheme />
@@ -88,10 +88,8 @@ const ThemeSection = () => {
     </View>
   );
 };
-
 // --- Language Toggle Section ---
 const LangSection = () => {
-
   const { theme } = useTheme();
   const { t } = useTranslation();
   return (
@@ -230,15 +228,16 @@ const MoreScreen = () => {
             gap: wp(2),
             marginHorizontal: wp(2),
           }}>
-          <SectionItem icon="face-man-profile" label="personal_info" navigationPath='PersonalInfoScreen' navigation={navigation} />
+          <SectionItem icon="face-man-profile" label="Personal Information" navigationPath='PersonalInfoScreen' navigation={navigation} />
+          <SectionItem icon="truck-delivery" navigation={navigation} label="Transport Management" navigationPath='TransportManagement' />
           <SectionItem icon="crown" navigation={navigation} label="subscription" navigationPath='SubscriptionList' />
-          <SectionItem icon="wallet" label="wallet_history" navigationPath='WalletHistory' navigation={navigation} />
-          <SectionItem icon="archive-star" navigation={navigation} label="reviews" navigationPath='PersonalInfoScreen' />
+          <SectionItem icon="wallet" label="Wallet History" navigationPath='WalletHistory' navigation={navigation} />
+          {/* <SectionItem icon="archive-star" navigation={navigation} label="reviews" navigationPath='PersonalInfoScreen' /> */}
           {/* <SectionItem icon="contactless-payment" navigation={navigation} label="razorpay" navigationPath='PersonalInfoScreen' /> */}
           <SectionItem icon="shield-check" navigation={navigation} label="Terms and Conditions" navigationPath='TermsAndCondtions' />
 
           <ThemeSection />
-          <LangSection />
+          {/* <LangSection /> */}
           <LogoutSection />
           {/* App Version Info */}
           <View style={{ backgroundColor: COLORS[theme].viewBackground }}>
@@ -273,11 +272,9 @@ const sectionRow = {
   alignItems: 'center', justifyContent: 'space-between',
   gap: wp(3.5),
 };
-
 const leftRow = {
   flexDirection: 'row',
   alignItems: 'center', marginStart: wp(8),
   gap: wp(4),
 };
-
 export default MoreScreen;

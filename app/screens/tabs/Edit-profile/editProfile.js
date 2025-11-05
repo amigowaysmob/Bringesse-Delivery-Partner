@@ -102,8 +102,9 @@ const EditProfile = () => {
     } finally {
     }
   };
-
+  
   useEffect(() => {
+    console?.log(JSON.stringify(profileDetails, null, 2), 'profileDetails')
     if (profileDetails) {
       setFormValues({
         firstName: profileDetails?.first_name || '',
@@ -178,9 +179,6 @@ const EditProfile = () => {
             right={<TextInput.Icon icon="chevron-right" color={COLORS[theme].textPrimary} />}
           />
         </TouchableOpacity>
-
-
-
         <View style={{ marginTop: hp(2), marginBottom: hp(3) }}>
           <TouchableOpacity
             onPress={handleSubmit}
@@ -201,7 +199,6 @@ const EditProfile = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
       <VerifyPhoneModal
         visible={verifyModalVisible}
         onClose={() => setVerifyModalVisible(false)}
@@ -210,32 +207,23 @@ const EditProfile = () => {
     </KeyboardAvoidingView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  fieldContainer: {
-    marginBottom: hp(2),
-  },
+  fieldContainer: { marginBottom: hp(2), },
   label: {
-    marginBottom: hp(0.8),
-    fontSize: wp(3.8),
-    fontWeight: '500',
+    marginBottom: hp(0.8), fontSize: wp(3.8), fontWeight: '500',
   },
   input: {
-    backgroundColor: 'transparent',
-    height: hp(5.5),
+    backgroundColor: 'transparent', height: hp(5.5),
   },
   errorText: {
     color: 'red',
-    marginTop: hp(0.5),
-    fontSize: wp(3.5),
+    marginTop: hp(0.5), fontSize: wp(3.5),
   },
   saveButton: {
-    paddingVertical: hp(1),
-    borderRadius: 5,
-    alignItems: 'center',
+    paddingVertical: hp(1), borderRadius: 5, alignItems: 'center',
   },
 });
 

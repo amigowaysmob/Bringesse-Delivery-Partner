@@ -23,13 +23,15 @@ const SubscriptionList = () => {
   const { t } = useTranslation();
   const accessToken = useSelector(state => state.Auth.accessToken);
   const profileDetails = useSelector(state => state.Auth.profileDetails);
-
   const [subscriptionData, setSubscriptionData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const siteDetails = useSelector(state => state.Auth.siteDetails);
+
+  const [expandedDescription, setExpandedDescription] = useState({});
+  const [refreshing, setRefreshing] = useState(false); // New state for refresh
 
   const fetchSubscription = useCallback(async () => {
     if (!accessToken || !profileDetails?.driver_id) return;
@@ -38,7 +40,7 @@ const SubscriptionList = () => {
       const data = await fetchData('subscriptionlists', 'POST', {
         driver_id: profileDetails?.driver_id
       }, null);
-      if (data?.status == true && Array.isArray(data.subscriptions)) {
+      if (data?.status === true && Array.isArray(data.subscriptions)) {
         setSubscriptionData(data.subscriptions);
       } else {
         setSubscriptionData([]);
@@ -47,11 +49,11 @@ const SubscriptionList = () => {
       console.error('Subscription fetch error:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);  // Stop refreshing after the data is loaded
     }
   }, [accessToken, profileDetails?.driver_id]);
 
   useEffect(() => {
-    console?.log(profileDetails, "profileDetails?.driver_id")
     fetchSubscription();
   }, [fetchSubscription]);
 
@@ -79,10 +81,25 @@ const SubscriptionList = () => {
         />
       </View>
       <View style={styles.detailsContainer}>
-        {/* <Text>{JSON.stringify(item)}</Text> */}
         <DetailItem label={t('Name')} value={item?.name} theme={theme} />
         <DetailItem label={t('Duration')} value={`${item?.duration} ${item?.durationType}`} theme={theme} />
-        {/* <DetailItem label={t('Price')} value={item?.price} theme={theme} /> */}
+        <DetailItem label={t('Free Calls')} value={`${item?.orderCount} `} theme={theme} />
+
+        {/* Description with "Show More" toggle */}
+        {
+          item?.description  &&
+          <View>
+            <Text style={{ color: COLORS[theme].textPrimary }}>
+              {expandedDescription[item?._id] ? item?.description : item?.description?.slice(0, 100) + '...'}
+            </Text>
+            <TouchableOpacity onPress={() => toggleDescription(item?._id)} style={{ marginTop: hp(1) }}>
+              <Text style={{ color: COLORS[theme].accent }}>
+                {expandedDescription[item?._id] ? t('Show Less') : t('Show More')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        }
+
         <View style={styles.buttonContainer}>
           {
             !item?.active_status ?
@@ -102,11 +119,10 @@ const SubscriptionList = () => {
               :
               <TouchableOpacity
                 style={[styles.buyNowButton, { borderColor: 'green', borderWidth: wp(0.5) }]}
-              // onPress={() => handleBuyNow(item)}
               >
                 <View style={{ flexDirection: "row" }}>
                   <MaterialCommunityIcon
-                  style={{marginHorizontal:wp(2)}}
+                    style={{ marginHorizontal: wp(2) }}
                     name="crown"
                     size={wp(6)}
                     color={COLORS[theme].textPrimary}
@@ -114,26 +130,32 @@ const SubscriptionList = () => {
                   <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].textPrimary }]}>
                     {`${t('Active')} `}
                   </Text>
-
                 </View>
               </TouchableOpacity>
-
           }
-
         </View>
       </View>
     </View>
   );
+
   const DetailItem = ({ label, value, theme }) => (
     <View style={styles.detailRow}>
       <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary }]}>
         {label}
       </Text>
       <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
-        {label == t('Price') ? `${profileDetails?.currency_symbol} ${value}` : value}
+        {label === t('Price') ? `${profileDetails?.currency_symbol} ${value}` : value}
       </Text>
     </View>
   );
+
+  const toggleDescription = (id) => {
+    setExpandedDescription(prevState => ({
+      ...prevState,
+      [id]: !prevState[id]
+    }));
+  };
+
   const fnGetRazorPay = async () => {
     try {
       const data = await fetchData('createPaymentIntent/', 'POST', {
@@ -143,24 +165,22 @@ const SubscriptionList = () => {
         Authorization: `${accessToken}`,
         driver_id: profileDetails.driver_id,
       });
-      setProcessing(false)
-      console.log('createPaymentIntent', JSON.stringify(data));
-      initRazorPay(data?.data)
+      setProcessing(false);
+      initRazorPay(data?.data);
     } catch (error) {
       console.error('profileDetails:', error);
-    } finally {
     }
-  }
+  };
 
   const initRazorPay = (payLoad) => {
     const options = {
       description: 'Payment for your order',
-      image: 'https://your-logo-url.png', // Optional
+      image: 'https://your-logo-url.png',
       currency: siteDetails?.currency_code,
-      key: siteDetails?.razorKey, // Replace with your actual Key ID
-      amount: payLoad?.amount, // Amount in paisa (e.g., 10000 for ₹100)
+      key: siteDetails?.razorKey,
+      amount: payLoad?.amount,
       name: selectedSubscription?.name,
-      order_id: payLoad?.orderId, // From your backend
+      order_id: payLoad?.orderId,
       prefill: {
         email: profileDetails?.email,
         contact: profileDetails?.phone_no
@@ -170,7 +190,6 @@ const SubscriptionList = () => {
     RazorpayCheckout.open(options)
       .then((data) => {
         if (data?.razorpay_payment_id) {
-          console?.log(data, "razorpay_payment_id")
           let payLoad = {
             driverId: profileDetails?.driver_id,
             transactionId: data?.razorpay_payment_id,
@@ -183,32 +202,26 @@ const SubscriptionList = () => {
             orderId: data?.razorpay_order_id,
             subscriptionId: selectedSubscription?._id,
             currency: profileDetails?.currency_code
-          }
-          console?.log(payLoad, "SubsctiotionpayLoad")
-          fnGetPaymentStatus(payLoad)
+          };
+          fnGetPaymentStatus(payLoad);
         }
       })
       .catch((error) => {
-        console.log(error, "error")
+        console.log(error, "error");
       });
-  }
+  };
 
   const fnGetPaymentStatus = async (payLoad) => {
     try {
-      const data = await fetchData('subscribe/', 'POST',
-        payLoad,
-        {
-          Authorization: `${accessToken}`,
-          driver_id: profileDetails.driver_id,
-        });
-      setProcessing(false)
-      console.log('subscribe', JSON.stringify(data));
-      initRazorPay(data?.data)
+      const data = await fetchData('subscribe/', 'POST', payLoad, {
+        Authorization: `${accessToken}`,
+        driver_id: profileDetails.driver_id,
+      });
+      setProcessing(false);
     } catch (error) {
       console.error('profileDetails:', error);
-    } finally {
     }
-  }
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
@@ -236,10 +249,11 @@ const SubscriptionList = () => {
                 </Text>
               </View>
             }
+            onRefresh={fetchSubscription} 
+            refreshing={refreshing}  
           />
         )}
       </View>
-      {/* Modal with subscription details */}
       <Modal
         animationType="fade"
         transparent
@@ -304,7 +318,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
-    // borderColor: "#CCC",
     borderWidth: wp(0.5),
   },
   iconContainer: {

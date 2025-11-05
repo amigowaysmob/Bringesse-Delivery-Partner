@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, PanResponder,
+  Alert, RefreshControl
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -13,12 +14,14 @@ import HeaderBar from '../components/header';
 import { fetchData } from '../api/api';
 import { useSelector } from 'react-redux';
 import DeviceInfo from 'react-native-device-info';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-const OrdersScreen = () => {
+const tabs = ['ongoing', 'completed'];
+
+const TransportManagement = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('Ongoing');
+  const [activeTab, setActiveTab] = useState('ongoing'); // lowercase for API compatibility
 
   const profile = useSelector(state => state.Auth.profile);
   const accessToken = useSelector(state => state.Auth.accessToken);
@@ -28,19 +31,18 @@ const OrdersScreen = () => {
   const [fetchingMore, setFetchingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-
+  const [refreshing, setRefreshing] = useState(false); // Refresh state for pull-to-refresh
+  const navigation = useNavigation();
   const limit = 10;
 
-  // Icon by order status
+  // Icon based on status (your API sends 'accepted', 'completed', etc.)
   const getIconName = (status) => {
     switch (status) {
-      case 'delivered':
-        return 'check-circle-outline';
-      case 'pending':
-        return 'clock-outline';
+      case 'accepted':
       case 'on_the_way':
-      case 'dispatched':
         return 'bike-fast';
+      case 'completed':
+        return 'check-circle-outline';
       case 'cancelled':
         return 'close-circle-outline';
       default:
@@ -48,20 +50,17 @@ const OrdersScreen = () => {
     }
   };
 
-  // Translated status
+  // Status display text, adjust as needed
   const getStatusText = (status) => {
     switch (status) {
-      case 'delivered':
-        return t('order_delivered') || 'Order Delivered';
-      case 'pending':
-        return t('order_pending') || 'Order Pending';
-      case 'on_the_way':
-      case 'dispatched':
-        return t('order_on_the_way') || 'Order on the Way';
+      case 'accepted':
+        return t('Accepted') || 'Accepted';
+      case 'completed':
+        return t('Completed') || 'Completed';
       case 'cancelled':
-        return t('order_cancelled') || 'Order Cancelled';
+        return t('Cancelled') || 'Cancelled';
       default:
-        return t('order_status') || 'Order Status';
+        return status || '';
     }
   };
 
@@ -84,31 +83,26 @@ const OrdersScreen = () => {
       const deviceId = await DeviceInfo.getUniqueId();
       const payload = {
         driver_id: profile.driver_id,
-        offset: '0',
-        type: tab.toLowerCase(),
+        booking_status: tab, // API expects lowercase tab (e.g., 'ongoing' or 'completed')
+        offset: (pageNumber - 1) * limit,
+        limit,
       };
       const headers = {
         Authorization: `${accessToken}`,
         driver_id: profile.driver_id,
         device_id: deviceId,
       };
-
       try {
         if (pageNumber === 1) setLoading(true);
         else setFetchingMore(true);
-
-        const data = await fetchData('orderhistory', 'POST', payload, headers);
-        console?.log(data, 'dataOrders');
-        if (!data?.orders.length) {
-          AsyncStorage.removeItem('ACCEPTEDBOOKING');
-        }
-        if (data?.status && Array.isArray(data.orders)) {
+        const data = await fetchData('transport/bookinghistory', 'POST', payload, headers);
+        if (data?.status) {
           if (pageNumber === 1) {
-            setOrders(data.orders);
+            setOrders(data.data);
           } else {
-            setOrders((prev) => [...prev, ...data.orders]);
+            setOrders((prev) => [...prev, ...data.data]);
           }
-          setHasMore(data.orders.length >= limit);
+          setHasMore(data.data.length >= limit);
         } else {
           if (pageNumber === 1) setOrders([]);
           setHasMore(false);
@@ -123,11 +117,13 @@ const OrdersScreen = () => {
     [accessToken, profile?.driver_id, activeTab]
   );
 
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchOrders(1, activeTab);
-  }, [activeTab, fetchOrders]);
+  useFocusEffect(
+    useCallback(() => {
+      setPage(1);
+      setHasMore(true);
+      fetchOrders(1, activeTab);
+    }, [activeTab, fetchOrders])
+  );
 
   const handleLoadMore = () => {
     if (!fetchingMore && hasMore) {
@@ -137,6 +133,32 @@ const OrdersScreen = () => {
     }
   };
 
+  // Open dialer with phone number
+  const handleCall = (phone) => {
+    if (phone) {
+      let phoneNumber = `tel:${phone}`;
+      Linking.openURL(phoneNumber).catch(err => {
+        console.warn('Failed to open dialer:', err);
+      });
+    }
+  };
+
+  // PanResponder for swipe gestures to change tabs
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < 20;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > 50) {
+          setActiveTab('ongoing')
+        } else if (gestureState.dx < -50) {
+          setActiveTab('completed')
+        }
+      },
+    })
+  ).current;
+
   const renderFooter = () =>
     fetchingMore ? (
       <View style={styles.footerLoader}>
@@ -145,45 +167,68 @@ const OrdersScreen = () => {
     ) : null;
 
   const renderItem = ({ item }) => (
-    <View style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}>
+    <TouchableOpacity
+      onPress={() => {
+        // item?.status !== 'cancelled' &&
+          item?.status === 'completed' &&   item?.status ===  'cancelled' ?
+          navigation.navigate('BookingCompleted', { bid: item?._id })
+          : navigation.navigate('BookingAction', { bid: item?._id })
+      }}
+      style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]} >
       <View style={styles.iconContainer}>
         <MaterialCommunityIcon
-          name={getIconName(item.order_status)}
+          name={getIconName(item.status)}
           size={wp(7)}
           color={COLORS[theme].accent}
         />
       </View>
       <View style={styles.textContainer}>
         <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
-          {item?.store_name || t('store_name')}
+          {item.categoryName || 'Category'}
         </Text>
 
-        <Text numberOfLines={1} style={[poppins.regular.h9, { color: COLORS[theme].textPrimary }]}>
-          {item?.store_location}
+        <Text style={[poppins.bold.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
+          Booking ID: {item.uniqueId}
         </Text>
-
         <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-          {getStatusText(item.order_status)}
+          Status: {getStatusText(item.status)}
         </Text>
 
         <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1.5) }]}>
-          {formatDateTime(item?.ordered_time)}
-        </Text>
-
-        <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-          {`${item.currency_symbol || ''}${item.delivery_charge?.toFixed(2) || ''}`}
+          Created: {formatDateTime(item.createdAt)}
         </Text>
       </View>
-    </View>
+
+      {/* Call icon button */}
+      {
+        item?.status !== 'completed' &&  item?.status !== 'cancelled'    && 
+        <TouchableOpacity
+          style={styles.callButton}
+          onPress={() => handleCall(item.customer?.phone)}
+        >
+          <MaterialCommunityIcon name="phone" size={wp(7)} color={COLORS[theme].accent} />
+        </TouchableOpacity>
+      }
+
+    </TouchableOpacity >
   );
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchOrders(1, activeTab); // Trigger the fetch when refreshing
+    setRefreshing(false);
+  }, [activeTab, fetchOrders]);
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <HeaderBar title={t('Orders') || 'Orders'} showBackButton={false} />
-      <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
+      <HeaderBar title={t('Transport') || 'TransportManagement'} showBackArrow={true} />
+      <View
+        {...panResponder.panHandlers}
+        style={{ flex: 1, backgroundColor: COLORS[theme].background }}
+      >
         {/* Tabs */}
         <View style={styles.tabContainer}>
-          {['Ongoing', 'Completed'].map((tab) => (
+          {tabs.map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[
@@ -206,12 +251,11 @@ const OrdersScreen = () => {
                   },
                 ]}
               >
-                {t(tab) || tab}
+                {t(tab.charAt(0).toUpperCase() + tab.slice(1)) || tab}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
-
         {loading ? (
           <View style={styles.loader}>
             <ActivityIndicator size="large" color={COLORS[theme].accent} />
@@ -219,7 +263,7 @@ const OrdersScreen = () => {
         ) : (
           <FlatList
             data={orders}
-            keyExtractor={(item) => item.order_id.toString()}
+            keyExtractor={(item) => item._id}
             renderItem={renderItem}
             contentContainerStyle={styles.scrollContent}
             onEndReached={handleLoadMore}
@@ -228,9 +272,16 @@ const OrdersScreen = () => {
             ListEmptyComponent={
               <View style={{ padding: wp(5), alignItems: 'center' }}>
                 <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
-                  {'No orders found.'}
+                  {'No Data found.'}
                 </Text>
               </View>
+            }
+            refreshControl={
+              <RefreshControl
+                // refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={COLORS[theme].accent}
+              />
             }
           />
         )}
@@ -243,7 +294,6 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: wp(5),
-    marginTop: hp(2),
     marginBottom: hp(1),
     borderBottomColor: '#ddd',
   },
@@ -272,6 +322,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     marginBottom: wp(3),
+    alignItems: 'center',
   },
   iconContainer: {
     marginRight: wp(4),
@@ -279,6 +330,9 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+  },
+  callButton: {
+    padding: wp(2),
   },
   loader: {
     flex: 1,
@@ -291,4 +345,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OrdersScreen;
+export default TransportManagement;

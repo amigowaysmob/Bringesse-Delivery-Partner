@@ -14,6 +14,10 @@ import UpdateProfilePic from '../screens/UpdateProfilePic';
 import ChangePassword from '../screens/tabs/Edit-profile/ChangePassword';
 import TermsandCondtions from '../screens/TermsandCondtions';
 import BookingAction from '../screens/BookingAction';
+import TransportManagement from '../screens/TransportManagement';
+import BookingCompleted from '../screens/BookingCompleted';
+import PaymentDocs from '../screens/tabs/Edit-profile/PaymentDocs';
+import UploadDocuments from '../screens/UploadDocuments';
 const Stack = createNativeStackNavigator();
 const MyTheme = {
   dark: true,
@@ -51,6 +55,11 @@ function InitialRouter() {
         <Stack.Screen name="ChangePassword" component={ChangePassword} />
         <Stack.Screen name="TermsAndCondtions" component={TermsandCondtions} />
         <Stack.Screen name="BookingAction" component={BookingAction} />
+        <Stack.Screen name="TransportManagement" component={TransportManagement} />
+        <Stack.Screen name="BookingCompleted" component={BookingCompleted} />
+        <Stack.Screen name="PaymentDocs" component={PaymentDocs} />
+        <Stack.Screen name="UploadDocuments" component={UploadDocuments} />
+        
       </Stack.Navigator>
 
     </NavigationContainer>

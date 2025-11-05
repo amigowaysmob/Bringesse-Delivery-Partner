@@ -32,6 +32,7 @@ import { LanguageProvider } from './app/context/LanguageContext';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import i18n from './app/config/i18';
 import InAppNotification from './app/screens/InAppNotification';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 if (Text.defaultProps == null) {
   Text.defaultProps = {};
@@ -119,15 +120,15 @@ function App(): React.JSX.Element {
   };
 
   const [pendingNotification, setPendingNotification] = useState<any>(null);
-
   useEffect(() => {
     checkPushNotificationPermission();
-
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('FCM Data:', JSON.stringify(remoteMessage, null, 2));
-
+      // console.log('FCM Data:', JSON.stringify(remoteMessage, null, 2));
       const data = remoteMessage.data || {};
+      if (data.scope == 'new_booking') {
+        await AsyncStorage.setItem('NOTIFICATION_DATA', JSON.stringify(data));
 
+      }
       setPendingNotification(data);
 
       const title = data.scope || 'Notification';

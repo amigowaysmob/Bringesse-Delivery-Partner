@@ -18,9 +18,7 @@ import FlashMessage, { showMessage } from 'react-native-flash-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import DeviceInfo from 'react-native-device-info';
-
 const LoginScreen = () => {
-
   // Hooks
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -29,17 +27,15 @@ const LoginScreen = () => {
   const {
     actions: { APP_REGISTER_LOGIN_API_CALL },
   } = useAuthHoc();
-
   // State
-  const [email, setEmail] = useState('teat@gmail.com');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState(__DEV__ ? 'jesinthkumar.dev@gmail.com' :'');
+  const [password, setPassword] = useState(__DEV__ ? '123456':'');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [fcmToken, setFcmToken] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
   const [isLoading, setIsLoading] = useState(false); // Loader state
-
   // Get FCM token and device ID on mount
   useEffect(() => {
     const init = async () => {
@@ -54,12 +50,10 @@ const LoginScreen = () => {
     };
     init();
   }, []);
-
   // Handle Login
   const handleSubmit = async () => {
     setEmailError('');
     setPasswordError('');
-
     // Validation
     if (!email) return setEmailError(t('Email is required.'));
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
@@ -67,7 +61,6 @@ const LoginScreen = () => {
     if (!password) return setPasswordError(t('Password is required.'));
     // if (password.length < 4) return setPasswordError(t('Password must be at least 6 characters.'));
     setIsLoading(true); // Start loader
-
     // API call
     APP_REGISTER_LOGIN_API_CALL({
       request: {

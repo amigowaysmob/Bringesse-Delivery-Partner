@@ -3,9 +3,9 @@ import React, { useEffect, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, Platform,
   KeyboardAvoidingView, TouchableOpacity, Text,
-  Alert,
+  Alert, TextInput
 } from 'react-native';
-import { ActivityIndicator, TextInput } from 'react-native-paper';
+import { ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { hp, wp } from '../../../resources/dimensions';
@@ -27,7 +27,6 @@ const PersonalInfoScreen = () => {
   const profileDetails = useSelector(state => state.Auth.profileDetails);
   const accessToken = useSelector(state => state.Auth.accessToken);
 
-
   const [formValues, setFormValues] = useState({
     vehicleCategory: '',
     vehicleType: '',
@@ -35,7 +34,6 @@ const PersonalInfoScreen = () => {
     serviceType: [],
     paymentId: '',
     documentType: '',
-    weight: '',
     transportOptions: [],  // changed from acceptedTerms boolean to array of selected transport options
   });
 
@@ -301,7 +299,7 @@ const PersonalInfoScreen = () => {
         mode="outlined"
         placeholder={label}
         value={value}
-        style={styles.input}
+        style={[styles.input, { borderColor: "#ccc", borderWidth: wp(0.3), borderRadius: wp(1), justifyContent: "center" }]}
         onChangeText={onChangeText}
         outlineColor={error ? 'red' : COLORS[theme].textInputBorder}
         activeOutlineColor={COLORS[theme].textPrimary}
@@ -310,6 +308,7 @@ const PersonalInfoScreen = () => {
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
+
   const toggleTransportOption = (option) => {
     let newOptions = [...formValues.transportOptions];
     if (newOptions.includes(option)) {
@@ -326,6 +325,7 @@ const PersonalInfoScreen = () => {
       {isRequired && <Text style={{ color: 'red' }}> *</Text>}
     </Text>
   );
+
   const renderTransportCheckbox = (label) => {
     const selected = formValues.transportOptions.includes(label);
     return (
@@ -346,14 +346,20 @@ const PersonalInfoScreen = () => {
       </TouchableOpacity>
     );
   };
-
-
+  // Add new handlers for the paymentId and documentType touchable opacity alerts
+  const handlePaymentIdPress = () => {
+    navigation.navigate('PaymentDocs')
+    // Alert.alert("Payment ID", "You clicked on Payment ID field.");
+  };
+  const handleDocumentTypePress = () => {
+    navigation.navigate('UploadDocuments')
+  };
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: COLORS[theme].background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <HeaderBar showBackArrow={true} title={t('personal_info')} />
+      <HeaderBar showBackArrow={true} title={t('Personal Information')} />
       <FlashMessage position="top" />
       {
         isLoading ?
@@ -396,21 +402,31 @@ const PersonalInfoScreen = () => {
               () => openModal('serviceType', 'Select Service Type', serviceTypes),
               errors.serviceType
             )}
-
-            {renderTextField(
-              'Payment ID',
-              formValues.paymentId,
-              text => handleChange('paymentId', text),
-              errors.paymentId
-            )}
-
-            {renderTextField(
-              'Document Type',
-              formValues.documentType,
-              text => handleChange('documentType', text),
-              errors.documentType
-            )}
-
+            {/* Replaced paymentId and documentType text fields with TouchableOpacity */}
+            <TouchableOpacity onPress={handlePaymentIdPress} style={styles.fieldContainer}>
+              <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>
+                Payment ID
+              </Text>
+              <View
+                style={[styles.input, { borderColor: "#ccc", borderWidth: wp(0.3), borderRadius: wp(1), justifyContent: "center" }]}
+              >
+                <Text style={[styles.label, { color: COLORS[theme].textPrimary, lineHeight: wp(10), marginHorizontal: wp(2) }]}>
+                  {profileDetails?.payment_id}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            {/* <TouchableOpacity onPress={handleDocumentTypePress} style={styles.fieldContainer}>
+              <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>
+                Document Type
+              </Text>
+              <View
+                style={[styles.input, { borderColor: "#ccc", borderWidth: wp(0.3), borderRadius: wp(1), justifyContent: "center" }]}
+              >
+                <Text style={[styles.label, { color: COLORS[theme].textPrimary, lineHeight: wp(10), marginHorizontal: wp(2) }]}>
+                  {'*** Document ID'}
+                </Text>
+              </View>
+            </TouchableOpacity> */}
             <View style={{ marginTop: hp(2), marginBottom: hp(3) }}>
               <TouchableOpacity
                 onPress={handleSubmit}
@@ -434,8 +450,6 @@ const PersonalInfoScreen = () => {
             </View>
           </ScrollView>
       }
-
-
       <SelectionModal
         visible={modalVisible}
         data={modalData}
