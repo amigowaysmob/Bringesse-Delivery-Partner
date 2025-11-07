@@ -15,6 +15,7 @@ import { useSelector } from 'react-redux';
 import DeviceInfo from 'react-native-device-info';
 import moment from 'moment';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Notification = () => {
   const { theme } = useTheme();
@@ -52,6 +53,14 @@ const Notification = () => {
         setFetchingMore(true);
       }
       const data = await fetchData('notification', 'POST', payload, headers);
+      if (!data?.ok && data?.status == 'false') {
+        // Alert.alert('Session Expired', 'Please log in again.', )
+        await AsyncStorage.clear();
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'login-screen' }],
+        });
+      }
       if (data?.status === 'true' && Array.isArray(data.result)) {
         if (pageNumber === 1) {
           setNotificationData(data.result);

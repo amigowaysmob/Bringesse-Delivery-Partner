@@ -6,9 +6,9 @@ import {
 import { wp, hp } from '../resources/dimensions';
 import { COLORS } from '../resources/colors';
 import { poppins } from '../resources/fonts';
+
 const BookingConfirmModal = ({ status, onClose, onConfirm, theme }) => {
-    const [otp, setOtp] = useState(__DEV__ ? 5629 : '');
-    // const {theme} = useTheme;
+    const [otp, setOtp] = useState('');
     const handleConfirm = () => {
         if (status === 'accepted' && otp.trim().length === 0) {
             alert('Please enter OTP to start pickup');
@@ -22,10 +22,9 @@ const BookingConfirmModal = ({ status, onClose, onConfirm, theme }) => {
         <Modal transparent animationType="slide" visible>
             <View style={styles.overlay}>
                 <View style={styles.container}>
-                    <Text style={[poppins.semi_bold.h5, { marginBottom: hp(2) }]}>
-                        {status === 'accepted' ? 'Enter OTP to Start Pickup' : 'Confirm Completion'}
+                    <Text style={[poppins.semi_bold.h6, { marginBottom: hp(2) }]}>
+                        {status === 'accepted' ? 'Enter OTP to Start Pickup' : 'Enter OTP to Complete Booking'}
                     </Text>
-                    {status === 'accepted' && (
                         <TextInput
                             placeholder="Enter OTP"
                             keyboardType="numeric"
@@ -37,7 +36,6 @@ const BookingConfirmModal = ({ status, onClose, onConfirm, theme }) => {
                             maxLength={4}
                             placeholderTextColor={COLORS[theme].black}
                         />
-                    )}
                     <View style={styles.btnRow}>
                         <TouchableOpacity style={[styles.btnCancel, {
                             borderWidth: wp(0.3), borderColor: COLORS[theme].accent
@@ -46,7 +44,6 @@ const BookingConfirmModal = ({ status, onClose, onConfirm, theme }) => {
                                 color: COLORS[theme].accent
                             }]}>Cancel</Text>
                         </TouchableOpacity>
-
                         <TouchableOpacity style={[styles.btnConfirm, {
                             backgroundColor: COLORS[theme].accent
                         }]} onPress={handleConfirm}>
@@ -60,7 +57,6 @@ const BookingConfirmModal = ({ status, onClose, onConfirm, theme }) => {
         </Modal>
     );
 };
-
 const styles = StyleSheet.create({
     overlay: {
         flex: 1, backgroundColor: 'rgba(0,0,0,0.8)',

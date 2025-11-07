@@ -18,6 +18,8 @@ import TransportManagement from '../screens/TransportManagement';
 import BookingCompleted from '../screens/BookingCompleted';
 import PaymentDocs from '../screens/tabs/Edit-profile/PaymentDocs';
 import UploadDocuments from '../screens/UploadDocuments';
+import { navigationRef } from './RootNavigation';
+import RevenueScreen from '../screens/RevenueScreen';
 const Stack = createNativeStackNavigator();
 const MyTheme = {
   dark: true,
@@ -31,10 +33,9 @@ const MyTheme = {
     notification: 'rgb(255, 69, 58)',
   },
 };
-
 function InitialRouter() {
   return (
-    <NavigationContainer theme={MyTheme}>
+    <NavigationContainer theme={MyTheme} ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -59,6 +60,9 @@ function InitialRouter() {
         <Stack.Screen name="BookingCompleted" component={BookingCompleted} />
         <Stack.Screen name="PaymentDocs" component={PaymentDocs} />
         <Stack.Screen name="UploadDocuments" component={UploadDocuments} />
+        <Stack.Screen name="RevenueScreen" component={RevenueScreen} />
+
+        
         
       </Stack.Navigator>
 

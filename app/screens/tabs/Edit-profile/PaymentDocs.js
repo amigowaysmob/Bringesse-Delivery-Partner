@@ -30,7 +30,7 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 const PaymentDocs = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const profileDetails = useSelector(state => state.Auth.profileDetails);
+  const profileDetails = useSelector(state => state.Auth?.profileDetails);
   const navigation = useNavigation();
 
   const [formValues, setFormValues] = useState({
@@ -66,8 +66,8 @@ const PaymentDocs = () => {
       const data = await fetchData(
         'showrazorpayaccountdetail',
         'POST',
-        { driver_id: profileDetails.driver_id },
-        { driver_id: profileDetails.driver_id }
+        { driver_id: profileDetails?.driver_id },
+        { driver_id: profileDetails?.driver_id }
       );
       const details = data?.driverDetails;
       if (details) {
@@ -304,19 +304,22 @@ const PaymentDocs = () => {
     >
       <HeaderBar showBackArrow={true} title={t('Bank Details')} />
       <FlashMessage position="top" />
-      <ScrollView
-        style={{ paddingHorizontal: wp(5), marginTop: wp(3) }}
-        showsVerticalScrollIndicator={false}
-      >
-        {renderTextField('Account Name', 'account_name', 50)}
-        {renderTextField('Account Number', 'account_number', 20)}
-        {renderTextField('IFSC Code', 'ifsc', 11)}
-        {renderTextField('PAN Card', 'pancard', 10)}
-        {renderTextField('Street 1', 'street1', 100)}
-        {renderTextField('Street 2', 'street2', 100)}
-        {renderTextField('City', 'city', 50)}
-        {/* Show loading spinner if location fetching */}
-        {/* <View style={styles.fieldContainer}>
+      <View 
+      pointerEvents={!profileDetails?.payment_id ? 'auto' : 'none'}
+       >
+        <ScrollView
+          style={{ paddingHorizontal: wp(4), marginTop: wp(0.5) }}
+          showsVerticalScrollIndicator={false}
+        >
+          {renderTextField('Account Name', 'account_name', 50)}
+          {renderTextField('Account Number', 'account_number', 20)}
+          {renderTextField('IFSC Code', 'ifsc', 11)}
+          {renderTextField('PAN Card', 'pancard', 10)}
+          {renderTextField('Street 1', 'street1', 100)}
+          {renderTextField('Street 2', 'street2', 100)}
+          {renderTextField('City', 'city', 50)}
+          {/* Show loading spinner if location fetching */}
+          {/* <View style={styles.fieldContainer}>
           <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>
             State, Country Code<Text style={{ color: 'red' }}>*</Text>
           </Text>
@@ -339,36 +342,42 @@ const PaymentDocs = () => {
             <Text style={styles.errorText}>{errors.state_with_code}</Text>
           )}
         </View> */}
-        {renderTextField('Postal Code', 'postal_code', 8)}
+          {renderTextField('Postal Code', 'postal_code', 8)}
 
-        <View style={{ marginTop: hp(2), marginBottom: hp(3) }}>
-          <TouchableOpacity
-            onPress={handleSubmit}
-            activeOpacity={0.8}
-            disabled={loading}
-            style={{
-              backgroundColor: COLORS[theme].accent,
-              paddingVertical: hp(1.2),
-              borderRadius: 5,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-            }}
-          >
-            {loading && (
-              <ActivityIndicator color={COLORS[theme].white} style={{ marginRight: 10 }} />
-            )}
-            <Text
-              style={[
-                poppins.regular.h4,
-                { color: COLORS[theme].white, textTransform: 'capitalize' },
-              ]}
-            >
-              {t('Save')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+          {
+            !profileDetails?.payment_id &&
+            <View style={{ marginTop: hp(2), marginBottom: hp(3) }}>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                activeOpacity={0.8}
+                disabled={loading}
+                style={{
+                  backgroundColor: COLORS[theme].accent,
+                  paddingVertical: hp(1.2),
+                  borderRadius: 5,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                }}
+              >
+                {loading && (
+                  <ActivityIndicator color={COLORS[theme].white} style={{ marginRight: 10 }} />
+                )}
+                <Text
+                  style={[
+                    poppins.regular.h4,
+                    { color: COLORS[theme].white, textTransform: 'capitalize' },
+                  ]}
+                >
+                  {t('Save')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          }
+         
+        </ScrollView>
+        
+      </View>
     </KeyboardAvoidingView>
   );
 };

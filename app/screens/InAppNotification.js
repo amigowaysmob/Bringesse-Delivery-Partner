@@ -18,6 +18,7 @@ import { fetchData } from '../api/api';
 import FlashMessage, { showMessage } from 'react-native-flash-message';
 import { ActivityIndicator } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { navigate } from '../navigation/RootNavigation';
 
 
 const InAppNotification = ({ data, onClose, onAccept, onReject }) => {
@@ -54,7 +55,7 @@ const InAppNotification = ({ data, onClose, onAccept, onReject }) => {
                 await AsyncStorage.setItem('ACCEPTEDBOOKING', JSON.stringify(bookingData));
 
                 setTimeout(() => {
-                    navigation.navigate('BookingAction', { bid: data?.booking_id, acceptStatus: 'accept' });
+                    navigate('BookingAction', { bid: data?.booking_id, acceptStatus: 'accept' });
                 }, 1000);
             } else {
                 showMessage({ message: dataResponse?.message, type: 'error' });

@@ -26,27 +26,52 @@ const LogoutSection = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const { t } = useTranslation();
-  const handleLogout = () => {
+  const profile = useSelector(state => state.Auth.profileDetails);
+  const accessToken = useSelector(state => state.Auth.accessToken);
+
+  const handleLogout = async () => {
     Alert.alert(
-      t('confirm_logout'),
-      t('are_you_sure_logout'),
+      t('Confirm Logout'),
+      t('Are you sure you want to logout?'),
       [
         { text: t('cancel'), style: 'cancel' },
         {
-          text: t('yes_Logout'),
-          onPress: () => {
-            AsyncStorage.clear();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'login-screen' }],
-            });
+          text: t('yes'),
+          // Make this callback async
+          onPress: async () => {
+            const deviceId = await DeviceInfo.getUniqueId();
+            try {
+              const data = await fetchData('logout/', 'POST', {
+                driver_id: profile?.driver_id,
+                device_id: deviceId,
+              }, {
+                Authorization: `${accessToken}`,
+                driver_id: profile?.driver_id,
+                device_id: deviceId,
+              });
+              console?.log(data, 'logout response', deviceId, profile?.driver_id);
+              if (data.status == 'true') {
+                await AsyncStorage.clear();
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'login-screen' }],
+                });
+              }
+            } catch (error) {
+              console.error('profile API Error:', error);
+            } finally {
+              await AsyncStorage.clear();
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'login-screen' }],
+              });
+            }
           },
         },
       ],
       { cancelable: true }
     );
   };
-
   return (
     <View style={{ backgroundColor: COLORS[theme].viewBackground }}>
       <TouchableOpacity onPress={handleLogout} style={sectionRow}>
@@ -137,23 +162,17 @@ const MoreScreen = () => {
       console.log('App is up to date.');
     }
   };
-
   const shouldUpdate = (currentVersion, minVersion) => {
     const current = currentVersion.split('.').map(Number); // [1, 0, 3]
     const minimum = minVersion.split('.').map(Number);     // [1, 0, 5]
-
     for (let i = 0; i < Math.max(current.length, minimum.length); i++) {
       const cur = current[i] || 0;
       const min = minimum[i] || 0;
-
       if (cur < min) return true;  // Needs update
       if (cur > min) return false; // Current is already newer
     }
-
     return false; // Versions are equal
   };
-
-
   useFocusEffect(
     useCallback(() => {
       checkUpdate();
@@ -167,8 +186,16 @@ const MoreScreen = () => {
             Authorization: `${accessToken}`,
             driver_id: profile.driver_id,
             // device_id: deviceId,
+            device_id: await DeviceInfo.getUniqueId(),
           });
-          // console.log('profile', JSON.stringify(data));
+          if (!data?.ok && data?.status == 'false') {
+            // Alert.alert('Session Expired', 'Please log in again.', )
+            await AsyncStorage.clear();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'login-screen' }],
+            });
+          }
           dispatch({
             type: 'PROFILE_DETAILS',
             payload: data,
@@ -187,9 +214,7 @@ const MoreScreen = () => {
   const SectionItem = ({ icon, label, navigationPath }) => (
     <TouchableOpacity onPress={
       () => {
-        // label !== 'razorpay' ? 
         navigation?.navigate(navigationPath)
-        // :          fnGetRazorPay()
       }
     } style={{ backgroundColor: COLORS[theme].viewBackground }}>
       <View style={sectionRow}>
@@ -229,13 +254,13 @@ const MoreScreen = () => {
             marginHorizontal: wp(2),
           }}>
           <SectionItem icon="face-man-profile" label="Personal Information" navigationPath='PersonalInfoScreen' navigation={navigation} />
-          <SectionItem icon="truck-delivery" navigation={navigation} label="Transport Management" navigationPath='TransportManagement' />
+          {/* <SectionItem icon="truck-delivery" navigation={navigation} label="Transport Management" navigationPath='TransportManagement' /> */}
           <SectionItem icon="crown" navigation={navigation} label="subscription" navigationPath='SubscriptionList' />
           <SectionItem icon="wallet" label="Wallet History" navigationPath='WalletHistory' navigation={navigation} />
           {/* <SectionItem icon="archive-star" navigation={navigation} label="reviews" navigationPath='PersonalInfoScreen' /> */}
           {/* <SectionItem icon="contactless-payment" navigation={navigation} label="razorpay" navigationPath='PersonalInfoScreen' /> */}
           <SectionItem icon="shield-check" navigation={navigation} label="Terms and Conditions" navigationPath='TermsAndCondtions' />
-
+          <SectionItem icon="currency-rupee" navigation={navigation} label="RevenueScreen" navigationPath='RevenueScreen' />
           <ThemeSection />
           {/* <LangSection /> */}
           <LogoutSection />

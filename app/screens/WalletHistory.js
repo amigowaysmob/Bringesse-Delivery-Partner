@@ -14,6 +14,8 @@ import HeaderBar from '../components/header';
 import { fetchData } from '../api/api';
 import { useSelector } from 'react-redux';
 import DeviceInfo from 'react-native-device-info';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 const WalletHistory = () => {
   const { theme } = useTheme();
@@ -74,6 +76,7 @@ const WalletHistory = () => {
       return '';
     }
   };
+  const navigation = useNavigation();
 
   const fetchOrders = useCallback(
     async (pageNumber = 1, tab = activeTab) => {
@@ -94,6 +97,14 @@ const WalletHistory = () => {
         // else setFetchingMore(true);
         const data = await fetchData('walletinfo', 'POST', payload, headers);
         console?.log(data, 'data');
+        if (!data?.ok && data?.status == 'false') {
+          // Alert.alert('Session Expired', 'Please log in again.', )
+          await AsyncStorage.clear();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'login-screen' }],
+          });
+        }
         setWalletDetail(data)
       } catch (err) {
         console.error('Orders fetch error:', err);

@@ -16,7 +16,7 @@ import { commonStyles } from '../../resources/styles'; // Assuming common styles
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext'; // Assuming theme context
 import { IMAGE_ASSETS } from '../../resources/images';
-
+import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 const { width } = Dimensions.get('window');
 const TAB_WIDTH = width / 5; // Each tab has equal width
 
@@ -30,13 +30,23 @@ const getTabIcon = (routeName, isFocused, colorScheme) => {
     case 'Home':
       return <IonicIcon name="home" color={iconColor} size={wp(6)} />;
     case 'Booking':
-      return <Image source={IMAGE_ASSETS?.moneybag} style={{width:wp(6),height:wp(6),tintColor:iconColor}} />;
+      return <MaterialCommunityIcon
+        name="truck-delivery-outline"
+        size={wp(6)}
+        color={iconColor}
+      />
+    // <Image source={IMAGE_ASSETS?.moneybag} style={{width:wp(6),height:wp(6),tintColor:iconColor}} />;
     case 'Notification':
-      return <IonicIcon name="notifications-outline" color={iconColor} size={wp(6)}/>;
+      return <IonicIcon name="notifications-outline" color={iconColor} size={wp(6)} />;
     case 'ExplorePackages':
       return <IonicIcon name="apps" color={iconColor} size={wp(6)} />;
     case 'T-Social':
-      return <Image source={IMAGE_ASSETS?.schedule} style={{width:wp(6),height:wp(6),tintColor:iconColor}} />;
+      return <MaterialCommunityIcon
+        name="cart-outline"
+        size={wp(6)}
+        color={iconColor}
+      />
+    // <Image source={IMAGE_ASSETS?.schedule} style={{ width: wp(6), height: wp(6), tintColor: iconColor }} />
     case 'More':
       return <MaterialIcon name="person" color={iconColor} size={wp(6)} />;
     default:
@@ -107,7 +117,7 @@ const BottomTabBar = ({ state, descriptors, navigation }) => {
                   // borderTopWidth: isFocused ? wp(0.5) : 0,
                   borderColor: COLORS[theme].accent,
                   padding: wp(2),
-                  backgroundColor:isFocused ?  COLORS[theme].accent: COLORS[theme].background,borderRadius:wp(20),height:wp(10),alignSelf:"center",width:wp(10)
+                  backgroundColor: isFocused ? COLORS[theme].accent : COLORS[theme].background, borderRadius: wp(20), height: wp(10), alignSelf: "center", width: wp(10)
                 },
               ]}
             >
@@ -132,11 +142,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     // justifyContent: 'space-around',
     // alignItems: 'center',
-    width:wp(100)
+    width: wp(100)
   },
   tabButton: {
     // alignItems: 'center',flex:1
-marginHorizontal:hp(2.2),
+    marginHorizontal: hp(2.2),
   },
   indicator: {
     position: 'absolute',

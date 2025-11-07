@@ -170,7 +170,7 @@ const TransportManagement = () => {
     <TouchableOpacity
       onPress={() => {
         // item?.status !== 'cancelled' &&
-          item?.status === 'completed' &&   item?.status ===  'cancelled' ?
+        item?.status === 'completed' && item?.status === 'cancelled' ?
           navigation.navigate('BookingCompleted', { bid: item?._id })
           : navigation.navigate('BookingAction', { bid: item?._id })
       }}
@@ -183,11 +183,12 @@ const TransportManagement = () => {
         />
       </View>
       <View style={styles.textContainer}>
-        <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
-          {item.categoryName || 'Category'}
+        <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
+          {/* {item.categoryName || 'Category'} */}
+          {JSON.stringify(item)}
         </Text>
 
-        <Text style={[poppins.bold.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
+        <Text style={[poppins.bold.h7, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
           Booking ID: {item.uniqueId}
         </Text>
         <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
@@ -201,7 +202,7 @@ const TransportManagement = () => {
 
       {/* Call icon button */}
       {
-        item?.status !== 'completed' &&  item?.status !== 'cancelled'    && 
+        item?.status !== 'completed' && item?.status !== 'cancelled' &&
         <TouchableOpacity
           style={styles.callButton}
           onPress={() => handleCall(item.customer?.phone)}
@@ -221,9 +222,8 @@ const TransportManagement = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
-      <HeaderBar title={t('Transport') || 'TransportManagement'} showBackArrow={true} />
-      <View
-        {...panResponder.panHandlers}
+      <HeaderBar title={t('Transport') || 'TransportManagement'} showBackArrow={false} />
+      <View  {...panResponder.panHandlers}
         style={{ flex: 1, backgroundColor: COLORS[theme].background }}
       >
         {/* Tabs */}

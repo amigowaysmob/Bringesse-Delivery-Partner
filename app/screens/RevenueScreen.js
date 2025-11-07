@@ -11,6 +11,8 @@ import { WebView } from 'react-native-webview';
 import { useSelector } from 'react-redux';
 import DeviceInfo from 'react-native-device-info';
 import { fetchData } from '../api/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 const RevenueScreen = () => {
   const { theme } = useTheme();
@@ -20,7 +22,7 @@ const RevenueScreen = () => {
   const [selectedTab, setSelectedTab] = useState('weekly');
   const [loading, setLoading] = useState(false);
   const [revenueData, setRevenueData] = useState(null);
-
+  const navigation = useNavigation();
   // Weekly data from API: amounts for Sun-Sat
   const weeklyData = revenueData?.week?.map(day => day.amount) || [0, 0, 0, 0, 0, 0, 0];
 
@@ -62,6 +64,14 @@ const RevenueScreen = () => {
           driver_id: profile.driver_id,
           device_id: deviceId,
         });
+        if (!data?.ok && data?.status == 'false') {
+          // Alert.alert('Session Expired', 'Please log in again.', )
+          await AsyncStorage.clear();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'login-screen' }],
+          });
+        }
         console.log('Revenue Data', JSON.stringify(data));
         setRevenueData(data);
       } catch (error) {
@@ -137,8 +147,8 @@ const RevenueScreen = () => {
   `;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, padding: wp(1) }}>
-      <HeaderBar title={t('revenue') || 'Revenue'} showBackButton={false} />
+    <GestureHandlerRootView style={{ flex: 1, padding: wp(1), backgroundColor: COLORS[theme].background }}>
+      <HeaderBar title={t('revenue') || 'Revenue'} showBackArrow={true} />
       <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
         {/* Total Revenue Card */}
         <View style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}>
@@ -169,8 +179,8 @@ const RevenueScreen = () => {
             style={{ flexDirection: 'row', justifyContent: 'space-between', width: wp(80), alignItems: 'center' }}
           >
             <Text style={[poppins.regular.h9, { color: COLORS[theme].textPrimary }]}>
-              {selectedTab === 'weekly' 
-                ? (t('total_weekly_revenue') || 'Total Weekly Revenue') 
+              {selectedTab === 'weekly'
+                ? (t('total_weekly_revenue') || 'Total Weekly Revenue')
                 : (t('total_monthly_revenue') || 'Total Monthly Revenue')}
             </Text>
 

@@ -50,10 +50,11 @@ const BookingAction = ({ route }) => {
       if (!bid || !profile?.driver_id) return;
       const response = await fetchData('/transport/bookingdetails', 'POST', {
         booking_id: bid,
-        driver_id: profile.driver_id,
+        driver_id: profile?.driver_id,
       });
       if (response?.status === true) {
         setBookingDetails(response?.data?.[0]);
+        console.log(response?.data?.[0],"Booking Details");
       } else {
         ToastAndroid.show(response?.message || 'Failed to fetch booking details', ToastAndroid.SHORT);
       }
@@ -138,6 +139,10 @@ const BookingAction = ({ route }) => {
       }
       if (newStatus === 'picked') {
         payload.otp = Number(enteredOTP);
+      }
+      else{
+        payload.completeOtp = Number(enteredOTP);
+
       }
       const resp = await fetchData('/transport/updatebooking', 'POST', payload);
       if (resp?.status === true) {

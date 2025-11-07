@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import FlashMessage, { showMessage } from 'react-native-flash-message';
 import { fetchData } from '../../../api/api';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import DeviceInfo from 'react-native-device-info';
 
 const PersonalInfoScreen = () => {
   const { theme } = useTheme();
@@ -40,7 +41,7 @@ const PersonalInfoScreen = () => {
   useEffect(() => {
     console?.log(profileDetails, "profileDetails")
     const allServices = siteDetails?.service_type || [];
-    if (!formValues.transportOptions.length) {
+    if (!formValues?.transportOptions?.length) {
       setServiceTypes([]);
       setFormValues(prev => ({ ...prev, serviceType: [] })); // clear selected service types
       return;
@@ -85,13 +86,9 @@ const PersonalInfoScreen = () => {
     setErrors(prev => ({ ...prev, [field]: null })); // Clear error on change
   };
   const dispatch = useDispatch();
-
   useEffect(() => {
 
-
   }, [formValues?.vehicleCategory])
-
-
 
   const validateFields = () => {
     const newErrors = {};
@@ -101,9 +98,11 @@ const PersonalInfoScreen = () => {
     if (!formValues.vehicleNumber.trim()) newErrors.vehicleNumber = 'Vehicle Number is required.';
     if (!formValues.serviceType.length) {
       newErrors.serviceType = 'Select at least one service type.';
-    } else if (formValues.serviceType.length > 3) {
-      newErrors.serviceType = 'You can select up to 3 service types.';
     }
+    // else if (formValues.serviceType.length > 3) {
+    //   newErrors.serviceType = 'You can select up to 3 service types.';
+    // }
+
     // if (!formValues.paymentId.trim()) newErrors.paymentId = 'Payment ID is required.';
     // if (!formValues.documentType.trim()) newErrors.documentType = 'Document Type is required.';
 
@@ -116,8 +115,6 @@ const PersonalInfoScreen = () => {
     // Alert.alert(JSON.stringify(profileDetails?.partner_type))
 
     if (validateFields()) {
-      // Alert.alert(JSON.stringify(formValues?.transportOptions)) 
-      // return true;
       if (!accessToken || !profileDetails?.driver_id) return;
       setLoading(true)
       let payLoad = {
@@ -132,6 +129,8 @@ const PersonalInfoScreen = () => {
         const data = await fetchData('updateprofile', 'PATCH', payLoad, {
           Authorization: `${accessToken}`,
           driver_id: profileDetails?.driver_id,
+          device_id: await DeviceInfo.getUniqueId(),
+
         });
         // console.log(data, "data")
         if (data?.status == "true") {
@@ -152,8 +151,12 @@ const PersonalInfoScreen = () => {
         }
         setTimeout(() => {
           setLoading(false)
-          navigation?.goBack();
-        }, 2000)
+          // navigation?.goBack();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'home-screen' }],
+          });
+        }, 1000)
       } catch (error) {
         setLoading(false)
         console.error('UPDATE_PROFILE API Error:', error);
@@ -164,7 +167,6 @@ const PersonalInfoScreen = () => {
         });
       } finally {
         // setLoading(false);
-
       }
       console.log('Submitted Profile Data:', formValues);
       // Submit logic here
@@ -266,7 +268,6 @@ const PersonalInfoScreen = () => {
   }, [siteDetails]);
 
 
-
   const renderDropdownField = (label, value, onPress, error) => (
     <View style={styles.fieldContainer}>
       <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>{label}</Text>
@@ -275,16 +276,22 @@ const PersonalInfoScreen = () => {
           styles.dropdown,
           {
             borderColor: error ? 'red' : COLORS[theme].textPrimary,
+            flexDirection: "row", justifyContent: "space-between", alignItems: "center"
           },
         ]}>
-          <Text style={[
+          <Text numberOfLines={1} style={[
             styles.dropdownText,
             {
-              color: value ? COLORS[theme].textPrimary : COLORS[theme].placeholder,
+              color: value ? COLORS[theme].textPrimary : COLORS[theme].textPrimary,
             },
           ]}>
             {value || `Select ${label}`}
           </Text>
+          <MaterialCommunityIcon
+            name={"chevron-right"}
+            size={wp(7)}
+            color={COLORS[theme].textPrimary}
+          />
         </View>
       </TouchableOpacity>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -327,7 +334,7 @@ const PersonalInfoScreen = () => {
   );
 
   const renderTransportCheckbox = (label) => {
-    const selected = formValues.transportOptions.includes(label);
+    const selected = formValues?.transportOptions?.includes(label);
     return (
       <TouchableOpacity
         key={label}
@@ -354,6 +361,7 @@ const PersonalInfoScreen = () => {
   const handleDocumentTypePress = () => {
     navigation.navigate('UploadDocuments')
   };
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: COLORS[theme].background }]}
@@ -361,61 +369,71 @@ const PersonalInfoScreen = () => {
     >
       <HeaderBar showBackArrow={true} title={t('Personal Information')} />
       <FlashMessage position="top" />
-      {
-        isLoading ?
-          <ActivityIndicator style={{ alignSelf: "center", justifyContent: "center" }} color={COLORS[theme].accent} size={wp(10)} />
-          :
-          <ScrollView
-            style={{ paddingHorizontal: wp(5), marginTop: wp(3) }}
-            showsVerticalScrollIndicator={false}
-          >
-            {renderDropdownField(
-              'Vehicle Category',
-              getLabelByValue(vehicleCategories, formValues.vehicleCategory),
-              () => openModal('vehicleCategory', 'Select Vehicle Category', vehicleCategories),
-              errors.vehicleCategory
-            )}
-            {renderDropdownField(
-              'Vehicle Type',
-              getLabelByValue(vehicleTypes, formValues.vehicleType),
-              () => openModal('vehicleType', 'Select Vehicle Type', vehicleTypes),
-              errors.vehicleType
-            )}
+      <View pointerEvents={profileDetails?.live_status ? 'none' : 'auto'}>
+        {
+          isLoading ?
+            <ActivityIndicator style={{ alignSelf: "center", justifyContent: "center" }} color={COLORS[theme].accent} size={wp(10)} />
+            :
+            <ScrollView
+              style={{ paddingHorizontal: wp(5), marginTop: wp(3) }}
+              showsVerticalScrollIndicator={false}
+            >
+              {renderDropdownField(
+                'Vehicle Category',
+                getLabelByValue(vehicleCategories, formValues.vehicleCategory),
+                () => openModal('vehicleCategory', 'Select Vehicle Category', vehicleCategories),
+                errors.vehicleCategory
+              )}
+              {renderDropdownField(
+                'Vehicle Type',
+                getLabelByValue(vehicleTypes, formValues.vehicleType),
+                () => openModal('vehicleType', 'Select Vehicle Type', vehicleTypes),
+                errors.vehicleType
+              )}
 
-            {renderTextField(
-              'Vehicle Number',
-              formValues.vehicleNumber,
-              text => handleChange('vehicleNumber', text),
-              errors.vehicleNumber
-            )}
+              {renderTextField(
+                'Vehicle Number',
+                formValues.vehicleNumber,
+                text => handleChange('vehicleNumber', text),
+                errors.vehicleNumber
+              )}
 
-            <View style={{ marginBottom: hp(2), }}>
-              {renderLabel('Select Transport Option', true)}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingRight: wp(10) }}>
-                {['Transport', 'Delivery'].map(option => renderTransportCheckbox(option))}
+              <View style={{ marginBottom: hp(2), }}>
+                {renderLabel('Select Transport Option', true)}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingRight: wp(10) }}>
+                  {['Transport', 'Delivery'].map(option => renderTransportCheckbox(option))}
+                </View>
+                {errors.transportOptions && <Text style={styles.errorText}>{errors.transportOptions}</Text>}
               </View>
-              {errors.transportOptions && <Text style={styles.errorText}>{errors.transportOptions}</Text>}
-            </View>
-            {renderDropdownField(
-              'Service Type',
-              getLabelByValue(serviceTypes, formValues.serviceType),
-              () => openModal('serviceType', 'Select Service Type', serviceTypes),
-              errors.serviceType
-            )}
-            {/* Replaced paymentId and documentType text fields with TouchableOpacity */}
-            <TouchableOpacity onPress={handlePaymentIdPress} style={styles.fieldContainer}>
-              <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>
-                Payment ID
-              </Text>
-              <View
-                style={[styles.input, { borderColor: "#ccc", borderWidth: wp(0.3), borderRadius: wp(1), justifyContent: "center" }]}
-              >
-                <Text style={[styles.label, { color: COLORS[theme].textPrimary, lineHeight: wp(10), marginHorizontal: wp(2) }]}>
-                  {profileDetails?.payment_id}
+              {/* Show Service Type only if 'Delivery' is selected */}
+              {formValues.transportOptions.includes('Delivery') && (
+                renderDropdownField(
+                  'Service Type',
+                  getLabelByValue(serviceTypes, formValues.serviceType),
+                  () => openModal('serviceType', 'Select Service Type', serviceTypes),
+                  errors.serviceType
+                )
+              )}
+
+              {/* Replaced paymentId and documentType text fields with TouchableOpacity */}
+              <TouchableOpacity onPress={handlePaymentIdPress} style={styles.fieldContainer}>
+                <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>
+                  Payment ID
                 </Text>
-              </View>
-            </TouchableOpacity>
-            {/* <TouchableOpacity onPress={handleDocumentTypePress} style={styles.fieldContainer}>
+                <View
+                  style={[styles.input, { borderColor: "#ccc", borderWidth: wp(0.3), borderRadius: wp(1), justifyContent: "space-between",alignItems:"center" }]}
+                >
+                  <Text style={[styles.label, { color: COLORS[theme].textPrimary, lineHeight: wp(10), marginHorizontal: wp(2) }]}>
+                    {profileDetails?.payment_id ? '*** Payment ID' : 'Not Set'}
+                  </Text>
+                  <MaterialCommunityIcon
+                    name={profileDetails?.payment_id ? "check":"chevron-right"}
+                    size={wp(7)}
+                    color={profileDetails?.payment_id ? 'green' :COLORS[theme].textPrimary}
+                  />
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDocumentTypePress} style={styles.fieldContainer}>
               <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>
                 Document Type
               </Text>
@@ -423,33 +441,34 @@ const PersonalInfoScreen = () => {
                 style={[styles.input, { borderColor: "#ccc", borderWidth: wp(0.3), borderRadius: wp(1), justifyContent: "center" }]}
               >
                 <Text style={[styles.label, { color: COLORS[theme].textPrimary, lineHeight: wp(10), marginHorizontal: wp(2) }]}>
-                  {'*** Document ID'}
+                  {'Document ID'}
                 </Text>
               </View>
-            </TouchableOpacity> */}
-            <View style={{ marginTop: hp(2), marginBottom: hp(3) }}>
-              <TouchableOpacity
-                onPress={handleSubmit}
-                activeOpacity={0.8}
-                style={{
-                  backgroundColor: COLORS[theme].accent,
-                  paddingVertical: hp(1),
-                  borderRadius: 5,
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={[
-                    poppins.regular.h4,
-                    { color: COLORS[theme].white },
-                  ]}
+            </TouchableOpacity>
+              <View style={{ marginTop: hp(2), marginBottom: hp(3) }}>
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  activeOpacity={0.8}
+                  style={{
+                    backgroundColor: COLORS[theme].accent,
+                    paddingVertical: hp(1),
+                    borderRadius: 5,
+                    alignItems: 'center',
+                  }}
                 >
-                  {t('save')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-      }
+                  <Text
+                    style={[
+                      poppins.regular.h4,
+                      { color: COLORS[theme].white },
+                    ]}
+                  >
+                    {profileDetails?.live_status ? 'Profile Locked' : 'Save Changes'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+        }
+      </View>
       <SelectionModal
         visible={modalVisible}
         data={modalData}
@@ -477,7 +496,8 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: 'transparent',
-    height: hp(5.5),
+    paddingHorizontal: wp(3),
+    height: hp(6),flexDirection:"row",
   },
   dropdown: {
     borderWidth: 1,
@@ -486,7 +506,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp(3),
   },
   dropdownText: {
-    fontSize: wp(4),
+    fontSize: wp(3.5),
   },
   errorText: {
     color: 'red',

@@ -30,22 +30,43 @@ const SelectionModal = ({
     setLocalSelected(selectedValues || []);
   }, [selectedValues, visible]);
 
+  // ✅ Toggle a single item
   const toggleItem = (item) => {
-    const exists = localSelected.find(val => val === item.value);
-    if (exists) {
-      setLocalSelected(prev => prev.filter(val => val !== item.value));
+    if (localSelected.includes(item.value)) {
+      setLocalSelected((prev) => prev.filter((val) => val !== item.value));
     } else {
-      if (localSelected.length >= maxSelection) return;
-      setLocalSelected(prev => [...prev, item.value]);
+      setLocalSelected((prev) => [...prev, item.value]);
     }
   };
 
+  // ✅ Toggle all (real) items
+  const toggleAll = () => {
+    const allValues = data.map((item) => item.value);
+    const allSelected = allValues.every((val) => localSelected.includes(val));
+    if (allSelected) {
+      // Deselect all
+      setLocalSelected([]);
+    } else {
+      // Select all
+      setLocalSelected(allValues);
+    }
+  };
+
+  // ✅ When user taps “Done”
   const handleConfirm = () => {
-    const selectedItems = data.filter(item => localSelected.includes(item.value));
+    const selectedItems = data.filter((item) =>
+      localSelected.includes(item.value)
+    );
     onSelect(selectedItems);
     onDismiss();
   };
 
+  // ✅ Check if “All” should look active
+  const allSelected =
+    data.length > 0 &&
+    data.every((item) => localSelected.includes(item.value));
+
+  // ✅ Render each row
   const renderItem = ({ item }) => {
     const isSelected = localSelected.includes(item.value);
     return (
@@ -61,21 +82,47 @@ const SelectionModal = ({
           multiSelect ? toggleItem(item) : (onSelect(item), onDismiss())
         }
       >
-          {multiSelect  && (
-          // <Text style={{ color: COLORS[theme].accent }}>✓</Text>
+        {multiSelect && (
           <MaterialCommunityIcon
-          name= {isSelected? "check-circle" :'circle-outline'}
-          size={wp(6)}
-          color={COLORS[theme].white} style={{ marginRight: wp(3) }}
-        />
-)}
+            name={isSelected ? 'check-circle' : 'circle-outline'}
+            size={wp(6)}
+            color={COLORS[theme].accent}
+            style={{ marginRight: wp(3) }}
+          />
+        )}
         <Text style={[styles.itemText, { color: COLORS[theme].textPrimary }]}>
-          {item?.label}
+          {item.label}
         </Text>
-      
       </TouchableOpacity>
     );
   };
+
+  // ✅ Add “Select All” as a header item (not in data)
+  const renderHeader = () =>
+    multiSelect ? (
+      <TouchableOpacity
+        style={[
+          styles.itemContainer,
+          {
+            borderBottomColor: COLORS[theme].border,
+            backgroundColor: allSelected
+              ? COLORS[theme].accent + '22'
+              : 'transparent',
+          },
+        ]}
+        onPress={toggleAll}
+      >
+        <MaterialCommunityIcon
+          name={allSelected ? 'check-circle' : 'circle-outline'}
+          size={wp(6)}
+          color={COLORS[theme].accent}
+          style={{ marginRight: wp(3) }}
+        />
+        <Text style={[styles.itemText, { color: COLORS[theme].textPrimary }]}>
+          Select All
+        </Text>
+      </TouchableOpacity>
+    ) : null;
 
   return (
     <Modal
@@ -88,13 +135,21 @@ const SelectionModal = ({
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
-      <View style={[styles.modalContainer, { backgroundColor: COLORS[theme].background }]}>
-        <Text style={[styles.title, { color: COLORS[theme].textPrimary }]}>{title}</Text>
+      <View
+        style={[
+          styles.modalContainer,
+          { backgroundColor: COLORS[theme].background },
+        ]}
+      >
+        <Text style={[styles.title, { color: COLORS[theme].textPrimary }]}>
+          {title}
+        </Text>
 
         <FlatList
           data={data}
           keyExtractor={(item, index) => `${item.value}-${index}`}
           renderItem={renderItem}
+          ListHeaderComponent={renderHeader}
           contentContainerStyle={{ paddingBottom: hp(2) }}
         />
 
@@ -103,7 +158,9 @@ const SelectionModal = ({
             style={[styles.doneButton, { backgroundColor: COLORS[theme].accent }]}
             onPress={handleConfirm}
           >
-            <Text style={{ color: COLORS[theme].white, textAlign: 'center' }}>Done</Text>
+            <Text style={{ color: COLORS[theme].white, textAlign: 'center' }}>
+              Done
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -137,10 +194,10 @@ const styles = StyleSheet.create({
     paddingVertical: hp(2),
     borderBottomWidth: 1,
     flexDirection: 'row',
-    // justifyContent: 'space-between',
+    alignItems: 'center',
   },
   itemText: {
-    // fontSize: wp(4.3),
+    fontSize: wp(4),
   },
   doneButton: {
     marginTop: hp(2),

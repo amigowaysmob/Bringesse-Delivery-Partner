@@ -43,7 +43,7 @@ const UserProfileCard = () => {
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={{ borderColor: COLORS[theme].buttonBg, padding: wp(2), borderRadius: wp(1), borderWidth: wp(0.4), width: wp(35), alignItems: "center", height: wp(9) }}>
                 <Text style={[poppins.regular.h7, { color: COLORS[theme].buttonBg, lineHeight: wp(4) }]}>
-                    {t('edit_profile')}
+                    {t('Edit Profile')}
                 </Text>
             </TouchableOpacity>
         </View>

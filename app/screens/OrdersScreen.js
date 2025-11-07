@@ -14,6 +14,7 @@ import { fetchData } from '../api/api';
 import { useSelector } from 'react-redux';
 import DeviceInfo from 'react-native-device-info';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 const OrdersScreen = () => {
   const { theme } = useTheme();
@@ -76,6 +77,7 @@ const OrdersScreen = () => {
       return '';
     }
   };
+  const navigation = useNavigation();
 
   const fetchOrders = useCallback(
     async (pageNumber = 1, tab = activeTab) => {
@@ -98,6 +100,14 @@ const OrdersScreen = () => {
         else setFetchingMore(true);
 
         const data = await fetchData('orderhistory', 'POST', payload, headers);
+        if (!data?.ok && data?.status == 'false') {
+          // Alert.alert('Session Expired', 'Please log in again.', )
+          await AsyncStorage.clear();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'login-screen' }],
+          });
+        }
         console?.log(data, 'dataOrders');
         if (!data?.orders.length) {
           AsyncStorage.removeItem('ACCEPTEDBOOKING');

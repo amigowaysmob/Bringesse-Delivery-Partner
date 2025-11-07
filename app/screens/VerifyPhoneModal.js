@@ -19,7 +19,7 @@ const VerifyPhoneModal = ({ visible, onClose, onVerified }) => {
   const [step, setStep] = useState(1); // 1: Phone Input, 2: OTP Input
   const [loading, setLoading] = useState(false);
   const [vOtp, setvOtp] = useState(null);
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(60);
   const timerRef = useRef(null);
   const profileDetails = useSelector(state => state.Auth.profileDetails);
   // Handle timer countdown
@@ -62,7 +62,7 @@ const VerifyPhoneModal = ({ visible, onClose, onVerified }) => {
       if (data.status) {
         showMessage({ message: 'OTP sent successfully.', type: 'success' });
         setStep(2);
-        setTimer(30); // Start 30 second timer
+        setTimer(60); // Start 60 second timer
       } else {
         showMessage({ message: data.message || 'Failed to send OTP.', type: 'danger' });
       }
@@ -92,7 +92,7 @@ const VerifyPhoneModal = ({ visible, onClose, onVerified }) => {
     setPhoneNumber('');
     setOtp('');
     setvOtp(null);
-    setTimer(30);
+    setTimer(60);
     clearInterval(timerRef.current);
     onClose();
   };

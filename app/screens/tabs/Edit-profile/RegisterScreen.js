@@ -95,7 +95,6 @@ const RegisterScreen = () => {
         weight: '100',         // added weight field (numeric)
         vehicle_no: 'TN01TG0023',
         referal_code: 'TESTRef0001',
-
     } :
         {
             firstName: '',
@@ -193,13 +192,13 @@ const RegisterScreen = () => {
         if (formValues.password !== formValues.confirmPassword) newErrors.confirmPassword = 'Passwords do not match.';
         if (!formValues.vehicleCategory) newErrors.vehicleCategory = 'Vehicle Category is required.';
         if (!formValues.vehicleType) newErrors.vehicleType = 'Vehicle Type is required.';
-        if (!formValues.serviceType.length) newErrors.serviceType = 'Select at least one service type.';
+        // if (!formValues.serviceType.length) newErrors.serviceType = 'Select at least one service type.';
         if (!formValues.transportOptions.length) newErrors.transportOptions = 'Please select Transport, Delivery, or both.';
         if (!formValues.acceptedTerms) newErrors.acceptedTerms = 'You must accept the Terms and Privacy Policy to continue.';
         if (!formValues.mobileNumber.trim()) newErrors.mobileNumber = 'Mobile number is required.';
         else if (!/^\d{7,15}$/.test(formValues.mobileNumber)) newErrors.mobileNumber = 'Enter a valid mobile number.';
-        if (!formValues.weight.trim()) newErrors.weight = 'Weight is required.';
-        else if (isNaN(Number(formValues.weight)) || Number(formValues.weight) <= 0) newErrors.weight = 'Enter a valid weight.';
+        // if (!formValues.weight.trim()) newErrors.weight = 'Weight is required.';
+        // else if (isNaN(Number(formValues.weight)) || Number(formValues.weight) <= 0) newErrors.weight = 'Enter a valid weight.';
         if (!formValues.vehicle_no.trim()) newErrors.vehicle_no = 'Vehicle number is required.';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -274,7 +273,7 @@ const RegisterScreen = () => {
                         navigation.reset({
                             index: 0,
                             routes: [{ name: 'home-screen' }],
-                          });
+                        });
                     }, 2000);
                 } else {
                     ToastAndroid.show(userDatas?.message, ToastAndroid.SHORT);
@@ -301,7 +300,7 @@ const RegisterScreen = () => {
     //     });
     // },[])
 
-    function handleNavigate(){
+    function handleNavigate() {
         navigation?.navigate('TermsAndCondtions')
     }
 
@@ -314,7 +313,7 @@ const RegisterScreen = () => {
                 activeOpacity={0.7}
             >
                 <MaterialCommunityIcon
-                onPress={toggleAcceptedTerms}
+                    onPress={toggleAcceptedTerms}
                     name={formValues.acceptedTerms ? "checkbox-marked" : "checkbox-blank-outline"}
                     size={wp(8)}
                     color={COLORS[theme].textPrimary}
@@ -329,7 +328,7 @@ const RegisterScreen = () => {
     };
     const getLabelByValue = (data, value) => {
         if (Array.isArray(value)) {
-            return data 
+            return data
                 .filter(item => value.includes(item.value))
                 .map(item => item.label)
                 .join(', ');
@@ -383,7 +382,7 @@ const RegisterScreen = () => {
                 secureTextEntry={secure}
                 style={styles.input}
                 onChangeText={onChangeText}
-                outlineColor={error ? 'red' : COLORS[theme].textInputBorder}
+                outlineColor={error ? 'red' : COLORS[theme].primary}
                 activeOutlineColor={COLORS[theme].textPrimary}
                 textColor={COLORS[theme].textPrimary}
             />
@@ -399,12 +398,17 @@ const RegisterScreen = () => {
                     styles.dropdown,
                     { borderColor: error ? 'red' : COLORS[theme].textPrimary },
                 ]}>
-                    <Text style={[
+                    <Text numberOfLines={1} style={[
                         styles.dropdownText,
-                        { color: value ? COLORS[theme].textPrimary : COLORS[theme].placeholder },
+                        { color: value ? COLORS[theme].textPrimary : COLORS[theme].placeholder ,maxWidth: wp(65)},
                     ]}>
                         {value || `Select ${label}`}
                     </Text>
+                    <MaterialCommunityIcon
+                        name={"chevron-right"}
+                        size={wp(6)}
+                        color={COLORS[theme].textPrimary}
+                    />
                 </View>
             </TouchableOpacity>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -431,7 +435,7 @@ const RegisterScreen = () => {
         );
     };
 
-  
+
 
     return (
         <KeyboardAvoidingView
@@ -439,7 +443,7 @@ const RegisterScreen = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <View >
-            <FlashMessage style={{zIndex:111111}} position="top" />
+                <FlashMessage style={{ zIndex: 111111 }} position="top" />
             </View>
             <HeaderBar showBackArrow={true} title="Register" />
             <ScrollView
@@ -460,6 +464,7 @@ const RegisterScreen = () => {
                         editable={false}
                         placeholder="Verify Mobile Number"
                         textColor={COLORS[theme].textPrimary}
+                        outlineColor={errors.mobileNumber ? 'red' : COLORS[theme].textPrimary}
                         right={<TextInput.Icon icon="chevron-right" color={COLORS[theme].textPrimary} />}
                     />
                 </TouchableOpacity>
@@ -478,7 +483,7 @@ const RegisterScreen = () => {
                     () => openModal('vehicleType', 'Select Vehicle Type', vehicleTypes),
                     errors.vehicleType
                 )}
-                {renderTextField('Weight', formValues.weight, text => handleChange('weight', text), errors.weight, false, true, true)}
+                {renderTextField('Weight', formValues.weight, text => handleChange('weight', text), errors.weight, false, false, true)}
                 {renderTextField('Vehicle Number', formValues.vehicle_no, text => handleChange('vehicle_no', text), errors.vehicle_no)}
                 <View style={{ marginBottom: hp(2), }}>
                     {renderLabel('Select Transport Option', true)}
@@ -487,12 +492,14 @@ const RegisterScreen = () => {
                     </View>
                     {errors.transportOptions && <Text style={styles.errorText}>{errors.transportOptions}</Text>}
                 </View>
-                {renderDropdownField(
-                    'Service Type',
-                    getLabelByValue(serviceTypes, formValues.serviceType),
-                    () => openModal('serviceType', 'Select Service Type', serviceTypes),
-                    errors.serviceType
-                )}
+
+                {formValues.transportOptions.includes('Delivery') &&
+                    renderDropdownField(
+                        'Service Type',
+                        getLabelByValue(serviceTypes, formValues.serviceType),
+                        () => openModal('serviceType', 'Select Service Type', serviceTypes),
+                        errors.serviceType
+                    )}
 
 
                 <View style={{ marginTop: hp(2) }}>
@@ -557,6 +564,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         paddingVertical: hp(1.5),
         paddingHorizontal: wp(3),
+        flexDirection: 'row', justifyContent: "space-between"
     },
     dropdownText: {
         fontSize: wp(4),

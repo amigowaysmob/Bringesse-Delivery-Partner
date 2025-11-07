@@ -3,7 +3,7 @@ import {
   View, StyleSheet, PermissionsAndroid, Platform,
   Alert, Image, Text, TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker} from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import { useTheme } from '../../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -14,14 +14,17 @@ import { IMAGE_ASSETS } from '../../../resources/images';
 import UserToggleStatus from '../../UserToggleStatus';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import UerProfileCard from '../../UerProfileCard';
 import messaging from '@react-native-firebase/messaging';
 import { poppins } from '../../../resources/fonts';
 import InAppNotification from '../../InAppNotification';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import polyline from '@mapbox/polyline';
-
+import UserawaitStatus from '../../UserawaitStatus';
+import DeviceInfo from 'react-native-device-info';
+import { fetchData } from '../../../api/api';
+import VersionUpgradeModal from '../../VersionUpgradeModal';
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 const HomeScreen = () => {
   const { theme } = useTheme();
@@ -35,6 +38,10 @@ const HomeScreen = () => {
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
   const [acceptedBooking, setAcceptedBooking] = useState(null);
+  const [fetchProfile, setfetchProfile] = useState(false);
+  const accessToken = useSelector(state => state.Auth?.accessToken);
+  const dispatch = useDispatch();
+
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') return true;
     try {
@@ -77,7 +84,6 @@ const HomeScreen = () => {
       }
     );
   };
-
   const fetchRouteDirections = async (startLoc, destLoc) => {
     try {
       const resp = await fetch(
@@ -127,7 +133,10 @@ const HomeScreen = () => {
       );
     }
   };
-
+  useEffect(() => {
+    console.log(profileDetails, "profileDetails")
+    // Alert.alert("Status", profileDetails?.profile_status  ? '1' : '0')
+  }, [])
   // Listen to notification and store it
   useFocusEffect(
     useCallback(() => {
@@ -142,10 +151,6 @@ const HomeScreen = () => {
         if (data) {
           const parsedData = JSON.parse(data);
           setAcceptedBooking(parsedData);
-          // Alert the user with booking ID if stored
-          // if (parsedData) {
-          //   console.log('acceptedBooking acceptedBooking ID', `Booking ID: ${acceptedBooking?.bId}`);
-          // }
         }
         else {
           setAcceptedBooking(null)
@@ -153,12 +158,14 @@ const HomeScreen = () => {
       });
     }, [])
   );
-
   // FCM notification handler
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       try {
         const data = remoteMessage?.data;
+        if (data?.scope == 'admin_changes') {
+          fetchProfileData();
+        }
         // console.log('Received FCM message:', data?.scope == 'booking_completed');
         if (data?.scope == 'booking_completed') {
           // ALERT
@@ -184,9 +191,35 @@ const HomeScreen = () => {
     setNotificationData(null);
   };
 
+
+  const fetchProfileData = async () => {
+    // Alert.alert( siteDetails?.media_url)
+    if (!accessToken || !profileDetails?.driver_id) return;
+    try {
+      const data = await fetchData('profile/' + profileDetails?.driver_id, 'GET', null, {
+        Authorization: `${accessToken}`,
+        driver_id: profileDetails.driver_id,
+        device_id: await DeviceInfo.getUniqueId(),
+      });
+      console?.log(data, "datadatadata")
+      if (!data?.ok && data?.status == 'false') {
+        await AsyncStorage.clear();
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'login-screen' }],
+        });
+      }
+      dispatch({
+        type: 'PROFILE_DETAILS',
+        payload: data,
+      });
+    } catch (error) {
+      console.error('profile API Error:', error);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: COLORS[theme].background }]}>
-     
       {location && (
         <MapView
           ref={mapRef}
@@ -228,8 +261,11 @@ const HomeScreen = () => {
       >
         <MaterialCommunityIcon name={'target'} size={wp(8)} color={COLORS[theme].white} />
       </TouchableOpacity>
+
       <View style={{ position: 'absolute', bottom: hp(1), width: '100%' }}>
         <UerProfileCard userstatus={profile?.live_status} />
+        <VersionUpgradeModal />
+        <UserawaitStatus userstatus={profileDetails?.profile_status} />
         {
           acceptedBooking?.bId ?
             <View>
@@ -242,7 +278,7 @@ const HomeScreen = () => {
               </TouchableOpacity>
             </View>
             :
-            <UserToggleStatus userStatus={profile?.live_status} />
+            <UserToggleStatus userStatus={profile?.live_status} profileStatus={profileDetails?.profile_status} />
         }
       </View>
       <FlashMessage position="top" />
@@ -252,7 +288,6 @@ const HomeScreen = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centerButton: {

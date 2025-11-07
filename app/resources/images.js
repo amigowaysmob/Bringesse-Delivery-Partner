@@ -7,9 +7,8 @@ const IMAGE_ASSETS = {
   moneybag: require('../assets/images/moneybag.png'),
   schedule: require('../assets/images/schedule.png'),
   subscription: require('../assets/images/subscription.png'),
-  
-};
-const ICON_ASSETS = {
+  loading: require('../assets/images/loading.json'),  
 };
 
-export { IMAGE_ASSETS, ICON_ASSETS };
+
+export { IMAGE_ASSETS };

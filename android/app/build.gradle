@@ -34,15 +34,13 @@ android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
-
     defaultConfig {
         applicationId "com.app.bringessedeliverypartner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 17
-        versionName "1.0.8"
+        versionCode 20
+        versionName "1.1.1"
     }
-
     // Signing configuration (using debug keystore for both)
     signingConfigs {
         debug {

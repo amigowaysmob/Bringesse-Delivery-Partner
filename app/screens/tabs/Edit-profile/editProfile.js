@@ -19,6 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchData } from '../../../api/api';
 import FlashMessage, { showMessage } from 'react-native-flash-message';
 import VerifyPhoneModal from '../../VerifyPhoneModal';
+import DeviceInfo from 'react-native-device-info';
 
 const EditProfile = () => {
   const { theme } = useTheme();
@@ -79,6 +80,7 @@ const EditProfile = () => {
       const data = await fetchData('updateprofile', 'PATCH', payLoad, {
         Authorization: `${accessToken}`,
         driver_id: profileDetails?.driver_id,
+        device_id: await DeviceInfo.getUniqueId(),
       });
 
       if (data?.status === 'true') {
@@ -102,7 +104,7 @@ const EditProfile = () => {
     } finally {
     }
   };
-  
+
   useEffect(() => {
     console?.log(JSON.stringify(profileDetails, null, 2), 'profileDetails')
     if (profileDetails) {
@@ -127,7 +129,7 @@ const EditProfile = () => {
         style={styles.input}
         onChangeText={text => handleChange(field, text)}
         secureTextEntry={secure}
-        outlineColor={errors[field] ? 'red' : COLORS[theme].textInputBorder}
+        outlineColor={errors[field] ? 'red' : COLORS[theme].textPrimary}
         activeOutlineColor={COLORS[theme].textPrimary}
         textColor={COLORS[theme].textPrimary}
       />
@@ -139,7 +141,7 @@ const EditProfile = () => {
       style={[styles.container, { backgroundColor: COLORS[theme].background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <HeaderBar showBackArrow title={t('edit_profile')} />
+      <HeaderBar showBackArrow title={t('Edit Profile')} />
       <FlashMessage position="top" />
       <ScrollView
         style={{ paddingHorizontal: wp(5), marginTop: wp(3) }}
@@ -148,7 +150,6 @@ const EditProfile = () => {
         {renderTextField('First Name', formValues.firstName, 'firstName')}
         {renderTextField('Last Name', formValues.lastName, 'lastName')}
         {renderTextField('Email ID', formValues.email, 'email')}
-
         <TouchableOpacity onPress={() => setVerifyModalVisible(true)} style={styles.fieldContainer}>
           <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>Mobile Number</Text>
           <TextInput
@@ -158,6 +159,7 @@ const EditProfile = () => {
             editable={false}
             placeholder="Verify Mobile Number"
             textColor={COLORS[theme].textPrimary}
+            outlineColor={COLORS[theme].textPrimary}
             right={<TextInput.Icon icon="chevron-right" color={COLORS[theme].textPrimary} />}
           />
         </TouchableOpacity>
@@ -174,7 +176,7 @@ const EditProfile = () => {
             value={"********"}
             editable={false}
             placeholder="Verify Mobile Number"
-
+            outlineColor={COLORS[theme].textPrimary}
             textColor={COLORS[theme].textPrimary}
             right={<TextInput.Icon icon="chevron-right" color={COLORS[theme].textPrimary} />}
           />
@@ -217,6 +219,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: 'transparent', height: hp(5.5),
+    // borderColor:"red",borderWidth:wp(1)
   },
   errorText: {
     color: 'red',

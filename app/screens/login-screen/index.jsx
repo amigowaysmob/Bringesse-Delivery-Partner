@@ -42,6 +42,7 @@ const LoginScreen = () => {
       try {
         const token = await messaging().getToken();
         const id = await DeviceInfo.getUniqueId();
+        console.log(token,"token")
         setFcmToken(token);
         setDeviceId(id);
       } catch (error) {
