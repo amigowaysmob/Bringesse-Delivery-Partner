@@ -228,7 +228,7 @@ const WalletHistory = () => {
             ListEmptyComponent={
               <View style={{ padding: wp(5), alignItems: 'center' }}>
                 <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
-                  {t('no_data') || 'no_data'}
+                  {t('No Data') || 'no_data'}
                 </Text>
               </View>
             }

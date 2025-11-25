@@ -6,18 +6,20 @@ import MoreScreen from '../screens/tabs/menuScreen';
 import HomeScreen from '../screens/tabs/home-screen';
 import Tsocial from '../screens/tabs/account/Tsocial';
 import { useTranslation } from 'react-i18next';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Notification from '../screens/Notification';
-import RevenueScreen from '../screens/RevenueScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import TransportManagement from '../screens/TransportManagement';
-
+import { useSelector } from 'react-redux';
+import { Alert } from 'react-native';
 
 const Tab = createBottomTabNavigator();
-
 function HomeTabRouter() {
   const { t } = useTranslation();
- 
+  const profileDetails = useSelector(state => state.Auth.profileDetails);
+  useEffect(() => {
+    // Alert.alert(JSON.stringify(profileDetails.partner_type.includes('Delivery')));
+  }, []);
+
   return (
     <Tab.Navigator
       tabBar={props => <BottomTabBar {...props} />}
@@ -28,15 +30,17 @@ function HomeTabRouter() {
       }}
     >
       <Tab.Screen name={t('Home')} component={HomeScreen} />
-      {/* Conditionally show Booking, Notification, T-Social */}
-        <>
-          <Tab.Screen name={t('Booking')} component={TransportManagement} />
-          <Tab.Screen
-            name={t('T-Social')}
-            component={OrdersScreen}
-            // initialParams={{ currentUserId: profile?.id }}
-          />
-        </>
+      {
+        // profileDetails?.partner_type?.includes('Transport') &&
+      <Tab.Screen name={t('Booking')} component={TransportManagement} />
+      }
+      {
+        // profileDetails?.partner_type?.includes('Delivery') &&
+        <Tab.Screen
+          name={t('T-Social')}
+          component={OrdersScreen}
+        />
+      }
       <Tab.Screen name={t('Notification')} component={Notification} />
       <Tab.Screen name={t('More')} component={MoreScreen} />
     </Tab.Navigator>

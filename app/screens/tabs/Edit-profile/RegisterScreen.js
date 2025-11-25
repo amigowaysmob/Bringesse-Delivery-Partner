@@ -3,9 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     View, StyleSheet, ScrollView, Platform,
     KeyboardAvoidingView, TouchableOpacity, Text,
-    Alert,
-    PermissionsAndroid,
-    ToastAndroid,
+    Alert, PermissionsAndroid, ToastAndroid,
 } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -23,7 +21,7 @@ import FlashMessage, { showMessage } from 'react-native-flash-message';
 import { fetchData } from '../../../api/api';
 import Geolocation from 'react-native-geolocation-service';
 import VerifyPhoneModal from '../../VerifyPhoneModal';
-
+import InstallReferrer from 'react-native-install-referrer';
 
 const RegisterScreen = () => {
     const { theme } = useTheme();
@@ -34,9 +32,27 @@ const RegisterScreen = () => {
     const [verifyModalVisible, setVerifyModalVisible] = useState(false);
     const [verifiedPhone, setVerifiedPhone] = useState('');
     // Focus effect will run every time screen is focused
+
+    const [storeId, setStoreId] = useState(null);
+
+    const fetchReferrer = async () => {
+        try {
+            const referrerDetails = await InstallReferrer.getReferrer();
+            console.log('Full referrer:', referrerDetails.referrer);
+            // Alert.alert(referrerDetails.referrer)
+            const params = new URLSearchParams(referrerDetails.referrer);
+            const id = params.get('storeId');
+            setStoreId(id);
+        } catch (error) {
+            // console.error('Error fetching referrer:', error);
+        }
+    }
+
+
     useFocusEffect(
         useCallback(() => {
             getLocation();
+            fetchReferrer();
         }, [])
     );
 
@@ -86,12 +102,12 @@ const RegisterScreen = () => {
         );
     };
     const [formValues, setFormValues] = useState(__DEV__ ? {
-        firstName: 'test', lastName: 'test2', location: 'testLocation',
-        email: 'teat@gmail.com', password: '123456', confirmPassword: '123456',
+        firstName: 'testing', lastName: 'test2testing', location: 'testLocation',
+        email: 'divyatestingteam@gmail.com', password: '123456', confirmPassword: '123456',
         vehicleCategory: '', vehicleType: '', serviceType: [],
         acceptedTerms: false,  // New field for terms acceptance
         transportOptions: [],  // changed from acceptedTerms boolean to array of selected transport options
-        mobileNumber: '1234567890',   // added mobileNumber field
+        mobileNumber: '6369849319',   // added mobileNumber field
         weight: '100',         // added weight field (numeric)
         vehicle_no: 'TN01TG0023',
         referal_code: 'TESTRef0001',
@@ -211,6 +227,7 @@ const RegisterScreen = () => {
     };
 
     const handleSubmit = async () => {
+        // Alert.alert(JSON.stringify(formValues?.serviceType))
         if (validateFields()) {
             let payLoad = {
                 first_name: formValues?.firstName.trim(),
@@ -221,23 +238,23 @@ const RegisterScreen = () => {
                 "location": formValues?.location,
                 "lon": location?.longitude,                                                   // not collected, maybe from GPS
                 "lat": location?.latitude,                                                // not collected, maybe from GPS
-                "service_type": formValues?.serviceType,          // assuming only first is needed
+                "service_type": formValues?.serviceType.length ? formValues?.serviceType.length : [],          // assuming only first is needed
                 "vehicle_type": formValues?.vehicleType,
                 "partner_type": formValues?.transportOptions || "",
                 "vehicle_category": formValues?.vehicleCategory,
                 "vehicle_number": formValues?.vehicle_no,
                 "capacity": `${formValues?.weight}` || "",
-                "referral_code": formValues?.referal_code                    // mapped from 
+                'storeId': storeId ? storeId : null
+                // "referral_code": formValues?.referal_code                    // mapped from 
             }
             try {
                 const data = await fetchData('signup/', 'POST', payLoad, {
                 });
                 // Alert.alert(JSON.stringify(data))
                 const userDatas = data;
-
                 if (data?.status == "true") {
                     const userDatas = data;
-                    // console.log('User data saved', userDatas);
+                    console.log('User data saved', userDatas);
                     try {
                         await AsyncStorage.setItem('user_data', JSON.stringify(userDatas));
                         console.log('User data saved');
@@ -272,7 +289,7 @@ const RegisterScreen = () => {
                         // navigation.replace('home-screen');
                         navigation.reset({
                             index: 0,
-                            routes: [{ name: 'home-screen' }],
+                            routes: [{ name: 'login-screen' }],
                         });
                     }, 2000);
                 } else {
@@ -290,7 +307,6 @@ const RegisterScreen = () => {
             }
         }
     };
-
     // useEffect(()=>{
     //     // Alert.alert("rter")
     //     showMessage({
@@ -299,12 +315,9 @@ const RegisterScreen = () => {
     //         type: 'success',
     //     });
     // },[])
-
     function handleNavigate() {
         navigation?.navigate('TermsAndCondtions')
     }
-
-
 
     const renderTermsCheckbox = () => {
         return (
@@ -400,7 +413,7 @@ const RegisterScreen = () => {
                 ]}>
                     <Text numberOfLines={1} style={[
                         styles.dropdownText,
-                        { color: value ? COLORS[theme].textPrimary : COLORS[theme].placeholder ,maxWidth: wp(65)},
+                        { color: value ? COLORS[theme].textPrimary : COLORS[theme].placeholder, maxWidth: wp(65) },
                     ]}>
                         {value || `Select ${label}`}
                     </Text>
@@ -434,9 +447,6 @@ const RegisterScreen = () => {
             </TouchableOpacity>
         );
     };
-
-
-
     return (
         <KeyboardAvoidingView
             style={[styles.container, { backgroundColor: COLORS[theme].background }]}
@@ -500,13 +510,10 @@ const RegisterScreen = () => {
                         () => openModal('serviceType', 'Select Service Type', serviceTypes),
                         errors.serviceType
                     )}
-
-
                 <View style={{ marginTop: hp(2) }}>
                     {renderTermsCheckbox()}
                     {errors.acceptedTerms && <Text style={styles.errorText}>{errors.acceptedTerms}</Text>}
                 </View>
-
                 <View style={{ marginTop: hp(3), marginBottom: hp(3) }}>
                     <TouchableOpacity
                         disabled={!formValues?.acceptedTerms}
@@ -584,5 +591,4 @@ const styles = StyleSheet.create({
         marginLeft: wp(2),
     },
 });
-
 export default RegisterScreen;

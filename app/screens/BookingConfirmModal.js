@@ -7,7 +7,7 @@ import { wp, hp } from '../resources/dimensions';
 import { COLORS } from '../resources/colors';
 import { poppins } from '../resources/fonts';
 
-const BookingConfirmModal = ({ status, onClose, onConfirm, theme }) => {
+const BookingConfirmModal = ({ status, onClose, onConfirm, theme,visible }) => {
     const [otp, setOtp] = useState('');
     const handleConfirm = () => {
         if (status === 'accepted' && otp.trim().length === 0) {
@@ -19,7 +19,7 @@ const BookingConfirmModal = ({ status, onClose, onConfirm, theme }) => {
     };
 
     return (
-        <Modal transparent animationType="slide" visible>
+        <Modal transparent animationType="none" visible={visible}>
             <View style={styles.overlay}>
                 <View style={styles.container}>
                     <Text style={[poppins.semi_bold.h6, { marginBottom: hp(2) }]}>

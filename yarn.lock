@@ -2992,6 +2992,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-documents/picker@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "@react-native-documents/picker@npm:11.0.0"
+  peerDependencies:
+    react: "*"
+    react-native: ">=0.79.0"
+  checksum: 411a9406f92724f9af618f99cf4948f14e011d505810a3fe5d67dd7ace39f218a08f49e9f8271be7bd27a957c6c942e472cdf0a27d67462f56af2ed5e51148e9
+  languageName: node
+  linkType: hard
+
 "@react-native-firebase/app@npm:^21.6.0":
   version: 21.14.0
   resolution: "@react-native-firebase/app@npm:21.14.0"
@@ -4641,6 +4651,7 @@ __metadata:
     "@react-native-community/geolocation": ^3.4.0
     "@react-native-community/netinfo": ^11.4.1
     "@react-native-community/slider": ^5.0.1
+    "@react-native-documents/picker": ^11.0.0
     "@react-native-firebase/app": ^21.6.0
     "@react-native-firebase/messaging": ^21.6.0
     "@react-native/babel-preset": 0.79.6
@@ -4693,6 +4704,7 @@ __metadata:
     react-native-image-crop-picker: ^0.41.2
     react-native-image-picker: ^8.0.0
     react-native-image-zoom-viewer: ^3.0.1
+    react-native-install-referrer: ^1.0.1
     react-native-keyboard-controller: ^1.18.6
     react-native-linear-gradient: ^2.8.3
     react-native-maps: 1.20.1
@@ -10480,6 +10492,15 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: bd32e382100fece8f815bacabe276f8f05a7c1edc1ff8485149fd863780de7d11a1a8241b837adad957e53ce1e19ef249410fdb312bc43fb7071b57fb879b78d
+  languageName: node
+  linkType: hard
+
+"react-native-install-referrer@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "react-native-install-referrer@npm:1.0.1"
+  peerDependencies:
+    react-native: ^0.41.2
+  checksum: a395524ba3c64113bccb0cb1341a18fa2f3b9103abdf7a50e072ae533fbde977f9f5863fa435f5e664e3407fb0d67b20bf5d8a6e958be90a1e1adf8abafeb016
   languageName: node
   linkType: hard
 

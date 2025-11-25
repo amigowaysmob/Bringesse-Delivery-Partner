@@ -10,7 +10,6 @@ import { useTranslation } from 'react-i18next';
 import { COLORS } from '../../../resources/colors';
 import { hp, wp } from '../../../resources/dimensions';
 import FlashMessage from 'react-native-flash-message';
-import { IMAGE_ASSETS } from '../../../resources/images';
 import UserToggleStatus from '../../UserToggleStatus';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -18,18 +17,21 @@ import { useDispatch, useSelector } from 'react-redux';
 import UerProfileCard from '../../UerProfileCard';
 import messaging from '@react-native-firebase/messaging';
 import { poppins } from '../../../resources/fonts';
-import InAppNotification from '../../InAppNotification';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import polyline from '@mapbox/polyline';
 import UserawaitStatus from '../../UserawaitStatus';
 import DeviceInfo from 'react-native-device-info';
 import { fetchData } from '../../../api/api';
 import VersionUpgradeModal from '../../VersionUpgradeModal';
+import CheckDocs from '../../CheckDocs';
+import UserPendingCount from '../../UserPendingCount';
+import UserDeliveryOrdersCount from '../../UserDeliveryOrdersCount copy';
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 const HomeScreen = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [location, setLocation] = useState(null);
+  const [addressCurrent, setAddress] = useState('');
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const mapRef = useRef(null);
   const profile = useSelector(state => state?.Auth?.profile);
@@ -41,7 +43,10 @@ const HomeScreen = () => {
   const [fetchProfile, setfetchProfile] = useState(false);
   const accessToken = useSelector(state => state.Auth?.accessToken);
   const dispatch = useDispatch();
+  const siteDetails = useSelector(state => state.Auth?.siteDetails);
+  const navigation = useNavigation();
 
+  // Ask for location permission
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') return true;
     try {
@@ -60,6 +65,7 @@ const HomeScreen = () => {
     }
   };
 
+  // Get user’s current location
   const getLocation = async () => {
     const hasPermission = await requestLocationPermission();
     if (!hasPermission) {
@@ -67,13 +73,15 @@ const HomeScreen = () => {
       return;
     }
     Geolocation.getCurrentPosition(
-      position => {
+      async position => {
         const { latitude, longitude } = position.coords;
         setLocation({ latitude, longitude });
+
+        // Get address from coordinates
+        await getAddressFromCoordinates(latitude, longitude);
       },
       error => {
         console.error('Geolocation error:', error);
-        Alert.alert('Location Error', error.message || 'Failed to get location.');
       },
       {
         enableHighAccuracy: true,
@@ -84,6 +92,27 @@ const HomeScreen = () => {
       }
     );
   };
+
+  // Get address from lat/lng using Google Geocoding API
+  const getAddressFromCoordinates = async (lat, lng) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_APIKEY}`
+      );
+      const json = await response.json();
+      if (json.results && json.results.length > 0) {
+        const formattedAddress = json.results[0].formatted_address;
+        setAddress(formattedAddress);
+        // Alert.alert('Current Location', formattedAddress);
+      } else {
+        // Alert.alert('No address found for this location');
+      }
+    } catch (error) {
+      console.error('Error getting address:', error);
+      // Alert.alert('Error', 'Failed to get address');
+    }
+  };
+
   const fetchRouteDirections = async (startLoc, destLoc) => {
     try {
       const resp = await fetch(
@@ -99,10 +128,9 @@ const HomeScreen = () => {
         }));
         setRouteCoordinates(coords);
 
-        // Get distance and duration from first leg
         const leg = route.legs[0];
-        setDistance(leg.distance.text);   // e.g. "10.4 km"
-        setDuration(leg.duration.text);   // e.g. "24 mins"
+        setDistance(leg.distance.text);
+        setDuration(leg.duration.text);
 
         if (mapRef.current) {
           mapRef.current.fitToCoordinates(coords, {
@@ -118,8 +146,6 @@ const HomeScreen = () => {
       Alert.alert('Error', 'Failed to get directions');
     }
   };
-
-  // Center map on user's location
   const centerMapToLocation = () => {
     if (location && mapRef.current) {
       mapRef.current.animateToRegion(
@@ -133,13 +159,10 @@ const HomeScreen = () => {
       );
     }
   };
-  useEffect(() => {
-    console.log(profileDetails, "profileDetails")
-    // Alert.alert("Status", profileDetails?.profile_status  ? '1' : '0')
-  }, [])
-  // Listen to notification and store it
   useFocusEffect(
     useCallback(() => {
+      fetchProfileData();
+
       getLocation();
       AsyncStorage.getItem('NOTIFICATION_DATA').then(data => {
         if (data) {
@@ -151,29 +174,27 @@ const HomeScreen = () => {
         if (data) {
           const parsedData = JSON.parse(data);
           setAcceptedBooking(parsedData);
-        }
-        else {
-          setAcceptedBooking(null)
+        } else {
+          setAcceptedBooking(null);
         }
       });
-    }, [])
+    }, [fetchProfile])
   );
-  // FCM notification handler
+
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       try {
         const data = remoteMessage?.data;
+        setfetchProfile(true);
+        fetchProfileData();
         if (data?.scope == 'admin_changes') {
           fetchProfileData();
         }
-        // console.log('Received FCM message:', data?.scope == 'booking_completed');
         if (data?.scope == 'booking_completed') {
-          // ALERT
           await AsyncStorage.removeItem('ACCEPTEDBOOKING');
-          setAcceptedBooking(null)
+          setAcceptedBooking(null);
         }
         if (data?.booking_uid) {
-          console.log('Received FCM message:', data);
           await AsyncStorage.setItem('NOTIFICATION_DATA', JSON.stringify(data));
           setNotificationData(data);
         }
@@ -181,27 +202,21 @@ const HomeScreen = () => {
         console.error('Error handling FCM message:', err);
       }
     });
-
     return unsubscribe;
   }, []);
-  const navigation = useNavigation();
-  // Clear notification data when closed
   const clearNotification = async () => {
     await AsyncStorage.removeItem('NOTIFICATION_DATA');
     setNotificationData(null);
   };
-
-
   const fetchProfileData = async () => {
-    // Alert.alert( siteDetails?.media_url)
     if (!accessToken || !profileDetails?.driver_id) return;
+    console.log(JSON.stringify(profileDetails, null, 2))
     try {
       const data = await fetchData('profile/' + profileDetails?.driver_id, 'GET', null, {
         Authorization: `${accessToken}`,
         driver_id: profileDetails.driver_id,
         device_id: await DeviceInfo.getUniqueId(),
       });
-      console?.log(data, "datadatadata")
       if (!data?.ok && data?.status == 'false') {
         await AsyncStorage.clear();
         navigation.reset({
@@ -209,6 +224,8 @@ const HomeScreen = () => {
           routes: [{ name: 'login-screen' }],
         });
       }
+      // Alert.alert('Profile Data Fetched', JSON.stringify(data));
+      console.log(data, 'Profile Data Fetched');
       dispatch({
         type: 'PROFILE_DETAILS',
         payload: data,
@@ -217,13 +234,27 @@ const HomeScreen = () => {
       console.error('profile API Error:', error);
     }
   };
-
+  
   return (
     <View style={[styles.container, { backgroundColor: COLORS[theme].background }]}>
+      <UserPendingCount
+        notificationData={notificationData}
+        addressCurrent={addressCurrent}
+        location={location}
+        userStatus={profile?.live_status}
+        profileStatus={profileDetails?.profile_status}
+      />
+      <UserDeliveryOrdersCount
+        notificationData={notificationData}
+        addressCurrent={addressCurrent}
+        location={location}
+        userStatus={profile?.live_status}
+        profileStatus={profileDetails?.profile_status}
+      />
       {location && (
         <MapView
           ref={mapRef}
-          style={[styles.map, { opacity: notificationData ? 0.2 : 1 }]}
+          style={[styles.map]}
           initialRegion={{
             latitude: location.latitude,
             longitude: location.longitude,
@@ -233,11 +264,11 @@ const HomeScreen = () => {
           showsUserLocation={true}
           showsMyLocationButton={false}
         >
-          {/* Current Location Marker */}
           <Marker coordinate={location}>
             <Image
-              source={IMAGE_ASSETS?.scooter}
-              style={{ width: wp(10), height: wp(10) }}
+
+              source={{ uri: siteDetails?.media_url + 'vehicles/' + profileDetails?.vechile_image?.image }}
+              style={{ width: wp(12), height: wp(12), borderRadius: wp(1), resizeMode: 'stretch', }}
             />
             <Text
               style={[
@@ -255,39 +286,70 @@ const HomeScreen = () => {
           </Marker>
         </MapView>
       )}
+      {/* Center map button */}
       <TouchableOpacity
         onPress={centerMapToLocation}
-        style={[styles.centerButton, { backgroundColor: COLORS[theme].accent, bottom: hp(30) }]}
+        style={[styles.centerButton, { backgroundColor: COLORS[theme].accent, bottom: hp(32) }]}
       >
         <MaterialCommunityIcon name={'target'} size={wp(8)} color={COLORS[theme].white} />
       </TouchableOpacity>
-
+      {/* Bottom section */}
       <View style={{ position: 'absolute', bottom: hp(1), width: '100%' }}>
         <UerProfileCard userstatus={profile?.live_status} />
         <VersionUpgradeModal />
+        <CheckDocs />
         <UserawaitStatus userstatus={profileDetails?.profile_status} />
-        {
-          acceptedBooking?.bId ?
-            <View>
-              <TouchableOpacity onPress={() => {
-                navigation.navigate('BookingAction', { bid: acceptedBooking?.bId, acceptStatus: null });
-              }
-              } style={{ flexDirection: "row", justifyContent: "space-between", height: hp(8), backgroundColor: COLORS[theme].background, alignItems: "center", marginHorizontal: wp(2), borderRadius: wp(2) }}>
-                <Text style={[poppins.semi_bold.h5, { color: COLORS[theme].accent, marginHorizontal: wp(2) }]}>{'Booking Ongoing'}</Text>
-                <MaterialCommunityIcon style={{ marginHorizontal: wp(2) }} name={'chevron-right'} size={wp(8)} color={COLORS[theme].accent} />
-              </TouchableOpacity>
-            </View>
-            :
-            <UserToggleStatus userStatus={profile?.live_status} profileStatus={profileDetails?.profile_status} />
-        }
+        {profileDetails?.order_assigned == 1 && acceptedBooking?.bId ? (
+          <View>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('BookingAction', {
+                  bid: acceptedBooking?.bId,
+                  acceptStatus: null,
+                });
+              }}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                height: hp(8),
+                backgroundColor: COLORS[theme].background,
+                alignItems: 'center',
+                marginHorizontal: wp(2),
+                borderRadius: wp(2),
+                borderColor: '#ccc',
+                borderWidth: wp(0.5),
+              }}
+            >
+              <Text
+                style={[
+                  poppins.semi_bold.h5,
+                  { color: COLORS[theme].accent, marginHorizontal: wp(2) },
+                ]}
+              >
+                {'Booking Ongoing'}
+              </Text>
+              <MaterialCommunityIcon
+                style={{ marginHorizontal: wp(2) }}
+                name={'chevron-right'}
+                size={wp(8)}
+                color={COLORS[theme].accent}
+              />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <UserToggleStatus
+            addressCurrent={addressCurrent}
+            location={location}
+            userStatus={profile?.live_status}
+            profileStatus={profileDetails?.profile_status}
+          />
+        )}
       </View>
       <FlashMessage position="top" />
-      {notificationData && (
-        <InAppNotification onClose={clearNotification} visible={!!notificationData} data={notificationData} />
-      )}
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centerButton: {
@@ -304,4 +366,5 @@ const styles = StyleSheet.create({
     height: hp(100),
   },
 });
+
 export default HomeScreen;

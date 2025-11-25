@@ -30,5 +30,16 @@ allprojects {
         maven { url "https://rzp-mobile.s3.amazonaws.com/sdk/android" } // Razorpay repo (again for all subprojects)
     }
 }
+subprojects { subproject ->
+    afterEvaluate {
+        if (subproject.hasProperty("android")) {
+            android {
+                compileSdkVersion = 35
+                buildToolsVersion = "35.0.0"
+            }
+        }
+    }
+}
+
 
 apply plugin: "com.facebook.react.rootproject"

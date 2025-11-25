@@ -21,17 +21,16 @@ export default function SplashScreen() {
   const {
     actions: {
       APP_REGISTER_OTP_LOGIN_API_CALL,
-      APP_SITE_SETTING_API_CALL, // <- Make sure this exists in API_REQUESTS
+      APP_SITE_SETTING_API_CALL,
     },
   } = useAuthHoc();
   const [isConnected, setIsConnected] = useState(true);
+
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected);
     });
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export default function SplashScreen() {
       const userData = await getUserData();
       const aToken = await getAccesstoken();
       const refreshToken = await getrefreshtoken();
-      // Alert.alert(JSON.stringify(aToken))
+
       if (!isConnected) {
         Alert.alert(
           'No Internet Connection',
@@ -48,51 +47,57 @@ export default function SplashScreen() {
         );
         return;
       }
-      // ✅ Call siteSetting API and store in Redux as APP_DEFAULT
+
+      // ✅ Call siteSetting API
       APP_SITE_SETTING_API_CALL({
         request: {},
         callback: {
-          successCallback: (response) => {
+          successCallback: async (response) => {
             if (response) {
-              console?.log(response, 'Site Setting API response');
+              console.log('Site Setting API response:', response);
               dispatch({
                 type: 'SET_SITE_DETAILS',
                 payload: response?.data?.data,
               });
+
+              // Only navigate after API success
+              if (userData && !_.isEmpty(userData) && aToken) {
+                const parsedData = JSON.parse(userData);
+                dispatch({
+                  type: 'SET_TOKENS',
+                  payload: {
+                    access_token: aToken,
+                    refresh_token: refreshToken,
+                  },
+                });
+                dispatch({
+                  type: 'UPDATE_PROFILE',
+                  payload: parsedData,
+                });
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'home-screen' }],
+                });
+              } else {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'GetStartedScreen' }],
+                });
+              }
             }
           },
           errorCallback: (err) => {
             console.log('Site Setting API error:', err);
+            Alert.alert(
+              'Error',
+              'Unable to load app settings. Please try again later.',
+              [{ text: 'OK', onPress: () => BackHandler.exitApp() }]
+            );
           },
         },
       });
-
-      setTimeout(() => {
-        if (userData && !_.isEmpty(userData) && aToken) {
-          const parsedData = JSON.parse(userData);
-          dispatch({
-            type: 'SET_TOKENS',
-            payload: {
-              access_token: aToken,
-              refresh_token: refreshToken,
-            },
-          });
-          dispatch({
-            type: 'UPDATE_PROFILE',
-            payload: parsedData,
-          });
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'home-screen' }],
-          });
-        } else {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'GetStartedScreen' }],
-          });
-        }
-      }, 2000); // Splash delay
     };
+
     initialize();
   }, [isConnected]);
 

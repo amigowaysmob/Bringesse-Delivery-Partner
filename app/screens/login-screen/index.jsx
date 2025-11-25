@@ -28,8 +28,8 @@ const LoginScreen = () => {
     actions: { APP_REGISTER_LOGIN_API_CALL },
   } = useAuthHoc();
   // State
-  const [email, setEmail] = useState(__DEV__ ? 'jesinthkumar.dev@gmail.com' :'');
-  const [password, setPassword] = useState(__DEV__ ? '123456':'');
+  const [email, setEmail] = useState(__DEV__ ? 'divyatestingteam@gmail.com' : '');
+  const [password, setPassword] = useState(__DEV__ ? '123456' : '');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -42,7 +42,7 @@ const LoginScreen = () => {
       try {
         const token = await messaging().getToken();
         const id = await DeviceInfo.getUniqueId();
-        console.log(token,"token")
+        console.log(token, "Fcm Token");
         setFcmToken(token);
         setDeviceId(id);
       } catch (error) {
@@ -82,7 +82,7 @@ const LoginScreen = () => {
               await AsyncStorage.setItem('user_data', JSON.stringify(userDatas));
               await AsyncStorage.setItem('access_token', userDatas.access_token);
               await AsyncStorage.setItem('refresh_token', userDatas.refresh_token);
-
+              ALert
               // Redux update
               dispatch({ type: 'UPDATE_PROFILE', payload: userDatas });
               dispatch({
@@ -100,6 +100,7 @@ const LoginScreen = () => {
               });
               // Navigate
               // navigation.reset('home-screen');
+              // navigation.navigate('UploadDriverDocs', { showBackArrow: false });
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'home-screen' }],
@@ -128,7 +129,6 @@ const LoginScreen = () => {
       },
     });
   };
-
   return (
     <TouchableWithoutFeedback>
       <KeyboardAvoidingView
@@ -145,11 +145,11 @@ const LoginScreen = () => {
         >
           {/* Email Field */}
           <Text style={[poppins.regular.h7, styles.label, { color: COLORS[theme].textPrimary }]}>
-            {t('Email_Id')}
+            {t('Email Id')}
           </Text>
           <TextInput
             style={[styles.inputField, { color: COLORS[theme].textPrimary }]}
-            placeholder={t('Email_Id')}
+            placeholder={t('Email Id')}
             placeholderTextColor={COLORS[theme].textPrimary}
             value={email}
             onChangeText={setEmail}
@@ -158,14 +158,13 @@ const LoginScreen = () => {
             autoCorrect={false}
           />
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
           {/* Password Field */}
           <Text style={[poppins.regular.h7, styles.label, { color: COLORS[theme].textPrimary }]}>
             {t('Password')}
           </Text>
           <View style={styles.passwordContainer}>
             <TextInput
-            maxLength={8}
+              maxLength={20}
               style={[styles.inputField, { flex: 1, color: COLORS[theme].textPrimary }]}
               placeholder={t('Password')}
               placeholderTextColor={COLORS[theme].textPrimary}
@@ -185,8 +184,14 @@ const LoginScreen = () => {
             </TouchableOpacity>
           </View>
           {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+          {/* Register Link */}
+          <Text onPress={() => navigation.navigate('ForgetPassword')} style={[poppins.regular.h7, { color: COLORS[theme].accent, alignSelf: "flex-end", marginHorizontal: hp(2), textDecorationLine: 'underline' }]}>
+            {t('Forgot your Password ?')}{' '}
+            {/* <Text style={{ color: COLORS[theme].accent }} onPress={() => navigation.navigate('RegisterScreen')}>
+            {t('Register')}
+          </Text> */}
+          </Text>
         </ScrollView>
-
         {/* Register Link */}
         <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary, alignSelf: "center" }]}>
           {t('Register New user?')}{' '}
@@ -219,59 +224,37 @@ const LoginScreen = () => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
+  container: { flex: 1 }, scrollContainer: {
+    flexGrow: 1, alignItems: 'center',
   },
   inputField: {
-    width: wp(90),
-    height: hp(6),
-    borderWidth: 1,
-    borderColor: '#CCC',
-    borderRadius: 8,
-    marginBottom: hp(2),
-    paddingLeft: wp(3),
+    width: wp(90), height: hp(6), borderWidth: 1,
+    borderColor: '#CCC', borderRadius: 8,
+    marginBottom: hp(2), paddingLeft: wp(3),
     fontSize: wp(4),
   },
   passwordContainer: {
-    width: wp(90),
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: hp(2),
-    borderRadius: 8,
+    width: wp(90), flexDirection: 'row', alignItems: 'center',
+    marginBottom: hp(1), borderRadius: 8,
   },
   eyeIcon: {
     position: 'absolute',
-    right: wp(3),
-    top: hp(1.5),
+    right: wp(3), top: hp(1.5),
   },
   errorText: {
-    fontSize: wp(3.5),
-    color: 'red',
-    alignSelf: 'flex-start',
-    marginHorizontal: wp(5),
-    marginBottom: hp(1),
+    fontSize: wp(3.5), color: 'red',
+    alignSelf: 'flex-start', marginHorizontal: wp(5), marginBottom: hp(1),
   },
   submitButton: {
-    width: wp(90),
-    height: hp(6),
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: hp(2),
-    marginBottom: hp(3),
-    alignSelf: 'center',
+    width: wp(90), height: hp(6), borderRadius: 8,
+    justifyContent: 'center', alignItems: 'center', marginTop: hp(2),
+    marginBottom: hp(3), alignSelf: 'center',
   },
   label: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: wp(5),
+    alignSelf: 'flex-start', paddingHorizontal: wp(5),
     marginBottom: hp(1),
   },
   loaderContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
   },
 });

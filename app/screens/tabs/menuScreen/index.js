@@ -20,6 +20,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchData } from '../../../api/api';
 import DeviceInfo from 'react-native-device-info';
 import VersionCheck from 'react-native-version-check';
+import usePendingCount from '../../../hooks/userpendingCount';
+import useCurrentLocation from '../../../hooks/useCurrentLocation';
 
 // --- Logout Section ---
 const LogoutSection = () => {
@@ -28,6 +30,7 @@ const LogoutSection = () => {
   const { t } = useTranslation();
   const profile = useSelector(state => state.Auth.profileDetails);
   const accessToken = useSelector(state => state.Auth.accessToken);
+
 
   const handleLogout = async () => {
     Alert.alert(
@@ -142,7 +145,9 @@ const MoreScreen = () => {
   const [availVersion] = useState('1.0.0'); // or fetch from config or constants
   // const profile = useSelector(state => state.Auth.profile);
   const profile = useSelector(state => state.Auth.profileDetails);
-
+  const { location, locationLoading, refreshLocation } = useCurrentLocation();
+  // Get pending count using the custom hook
+  const { pendingCount, loading } = usePendingCount(location);
   const navigation = useNavigation();
   const accessToken = useSelector(state => state.Auth.accessToken);
   const dispatch = useDispatch();
@@ -203,14 +208,11 @@ const MoreScreen = () => {
         } catch (error) {
           console.error('profile API Error:', error);
         } finally {
-          // setLoading(false);
         }
       };
       fetchProfileData();
     }, [])
   );
-
-
   const SectionItem = ({ icon, label, navigationPath }) => (
     <TouchableOpacity onPress={
       () => {
@@ -237,13 +239,10 @@ const MoreScreen = () => {
       </View>
     </TouchableOpacity>
   );
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
-        {/* User Profile (Fixed at Top) */}
         <UserProfileCard profile={profile} />
-        {/* Scrollable Settings */}
         <ScrollView
           showsVerticalScrollIndicator={false}
           style={{ flex: 1 }}
@@ -253,12 +252,14 @@ const MoreScreen = () => {
             gap: wp(2),
             marginHorizontal: wp(2),
           }}>
+          <SectionItem icon="clock" label={`Peding Request ${pendingCount > 0 ? ` - ${pendingCount}` : ''}`} navigationPath='PendingHistory' navigation={navigation} />
+          <SectionItem icon="store" label={`Pending Order`} navigationPath='PendingOrdersHistory' navigation={navigation} />
           <SectionItem icon="face-man-profile" label="Personal Information" navigationPath='PersonalInfoScreen' navigation={navigation} />
-          {/* <SectionItem icon="truck-delivery" navigation={navigation} label="Transport Management" navigationPath='TransportManagement' /> */}
-          <SectionItem icon="crown" navigation={navigation} label="subscription" navigationPath='SubscriptionList' />
+          {
+            // profile?.partner_type.includes('Transport') &&
+            <SectionItem icon="crown" navigation={navigation} label="subscription" navigationPath='SubscriptionList' />
+          }
           <SectionItem icon="wallet" label="Wallet History" navigationPath='WalletHistory' navigation={navigation} />
-          {/* <SectionItem icon="archive-star" navigation={navigation} label="reviews" navigationPath='PersonalInfoScreen' /> */}
-          {/* <SectionItem icon="contactless-payment" navigation={navigation} label="razorpay" navigationPath='PersonalInfoScreen' /> */}
           <SectionItem icon="shield-check" navigation={navigation} label="Terms and Conditions" navigationPath='TermsAndCondtions' />
           <SectionItem icon="currency-rupee" navigation={navigation} label="RevenueScreen" navigationPath='RevenueScreen' />
           <ThemeSection />

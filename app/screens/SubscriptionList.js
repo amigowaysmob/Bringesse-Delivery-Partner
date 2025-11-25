@@ -3,7 +3,7 @@ import {
   View, Text,
   FlatList, StyleSheet, ActivityIndicator,
   Image, TouchableOpacity, Modal,
-  Alert,
+  Alert, ToastAndroid,
 } from 'react-native';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
@@ -17,8 +17,11 @@ import { useSelector } from 'react-redux';
 import { IMAGE_ASSETS } from '../resources/images';
 import RazorpayCheckout from 'react-native-razorpay';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
+import AutoCloseMessageModal from '../components/header/autoCloseModal';
 
 const SubscriptionList = () => {
+
   const { theme } = useTheme();
   const { t } = useTranslation();
   const accessToken = useSelector(state => state.Auth.accessToken);
@@ -29,6 +32,10 @@ const SubscriptionList = () => {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const siteDetails = useSelector(state => state.Auth.siteDetails);
+  const [activeSubscription, setActiveSubscription] = useState(null);
+  const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [apiMessage, setApiMessage] = useState('');
 
   const [expandedDescription, setExpandedDescription] = useState({});
   const [refreshing, setRefreshing] = useState(false); // New state for refresh
@@ -40,21 +47,27 @@ const SubscriptionList = () => {
       const data = await fetchData('subscriptionlists', 'POST', {
         driver_id: profileDetails?.driver_id
       }, null);
+
       if (data?.status === true && Array.isArray(data.subscriptions)) {
+        const activeSub = data.subscriptions.find(item => item.active_status);
+        const inactiveSubs = data.subscriptions.filter(item => !item.active_status);
+        setActiveSubscription(activeSub || null);
         setSubscriptionData(data.subscriptions);
       } else {
         setSubscriptionData([]);
+        setActiveSubscription(null);
       }
     } catch (err) {
       console.error('Subscription fetch error:', err);
     } finally {
       setLoading(false);
-      setRefreshing(false);  // Stop refreshing after the data is loaded
+      setRefreshing(false);
     }
   }, [accessToken, profileDetails?.driver_id]);
 
   useEffect(() => {
     fetchSubscription();
+    // fnGetPaymentStatus({});
   }, [fetchSubscription]);
 
   const handleBuyNow = (item) => {
@@ -81,13 +94,13 @@ const SubscriptionList = () => {
         />
       </View>
       <View style={styles.detailsContainer}>
+        {/* <Text>{JSON.stringify(item,null,2)}</Text> */}
         <DetailItem label={t('Name')} value={item?.name} theme={theme} />
         <DetailItem label={t('Duration')} value={`${item?.duration} ${item?.durationType}`} theme={theme} />
         <DetailItem label={t('Free Calls')} value={`${item?.orderCount} `} theme={theme} />
-
         {/* Description with "Show More" toggle */}
         {
-          item?.description  &&
+          item?.description &&
           <View>
             <Text style={{ color: COLORS[theme].textPrimary }}>
               {expandedDescription[item?._id] ? item?.description : item?.description?.slice(0, 100) + '...'}
@@ -99,19 +112,18 @@ const SubscriptionList = () => {
             </TouchableOpacity>
           </View>
         }
-
         <View style={styles.buttonContainer}>
           {
             !item?.active_status ?
               <TouchableOpacity
-                style={[styles.buyNowButton, { backgroundColor: COLORS[theme].accent }]}
+                style={[styles.buyNowButton, { backgroundColor: 'green' }]}
                 onPress={() => handleBuyNow(item)}
               >
                 <View style={{ flexDirection: "row", justifyContent: "space-between", width: '90%' }}>
                   <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].white }]}>
                     {`${t('BuyNow')} `}
                   </Text>
-                  <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].accent, backgroundColor: COLORS[theme].white, paddingHorizontal: wp(2), borderRadius: wp(2) }]}>
+                  <Text style={[poppins.semi_bold.h6, { color: 'green', backgroundColor: COLORS[theme].white, paddingHorizontal: wp(2), borderRadius: wp(2) }]}>
                     {` ${profileDetails?.currency_symbol} ${item?.price}`}
                   </Text>
                 </View>
@@ -137,18 +149,40 @@ const SubscriptionList = () => {
       </View>
     </View>
   );
+  const renderActiveItem = ({ item }) => (
+    <View style={[{
+      backgroundColor:'green',
+      borderColor: 'green',
+      flexDirection: 'row', padding: wp(3),
+      borderRadius: wp(2), elevation: 2,
+    }]}>
+      <View style={styles.iconContainer}>
+        <MaterialCommunityIcon name="crown" size={hp(5)} color={'#FFF'} style={{ marginTop: hp(0.5) }} />
+      </View>
+      <View style={styles.detailsContainer}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: wp(2) }}>
+          <View style={{ flexDirection: "column" }}>
+            <Text numberOfLines={2} style={[poppins.regular.h7, { color: COLORS[theme].white, textTransform: "capitalize" ,maxWidth:wp(45)}]}>{`${item?.name}`}</Text>
+            <Text style={[poppins.regular.h7, { color: COLORS[theme].white, textTransform: "capitalize" }]}>{`Duration : ${item?.duration} ${item?.durationType}`}</Text>
+          </View>
+          <View>
+            <Text style={[poppins.regular.h7, { color: COLORS[theme].white, textTransform: "capitalize" }]}>{`Free Calls : ${item?.orderCount}`}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
 
   const DetailItem = ({ label, value, theme }) => (
     <View style={styles.detailRow}>
-      <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary }]}>
+      <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
         {label}
       </Text>
-      <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
+      <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
         {label === t('Price') ? `${profileDetails?.currency_symbol} ${value}` : value}
       </Text>
     </View>
   );
-
   const toggleDescription = (id) => {
     setExpandedDescription(prevState => ({
       ...prevState,
@@ -171,7 +205,6 @@ const SubscriptionList = () => {
       console.error('profileDetails:', error);
     }
   };
-
   const initRazorPay = (payLoad) => {
     const options = {
       description: 'Payment for your order',
@@ -208,6 +241,7 @@ const SubscriptionList = () => {
       })
       .catch((error) => {
         console.log(error, "error");
+        fetchSubscription();
       });
   };
 
@@ -217,7 +251,19 @@ const SubscriptionList = () => {
         Authorization: `${accessToken}`,
         driver_id: profileDetails.driver_id,
       });
-      setProcessing(false);
+
+      // Alert.alert(JSON.stringify(data, null, 2));
+      if (data?.status === true) {
+        setProcessing(false);
+        fetchSubscription();
+        ToastAndroid.show(data?.message || 'Subscription successful', ToastAndroid.LONG);
+        setApiMessage(data.description || 'Operation Successful!');
+        setModalVisible(true);
+      }
+      else {
+        setProcessing(false);
+        ToastAndroid.show(data?.message || 'Subscription failed', ToastAndroid.LONG);
+      }
     } catch (error) {
       console.error('profileDetails:', error);
     }
@@ -225,7 +271,7 @@ const SubscriptionList = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
-      <HeaderBar title={t('SubscriptionList')} showBackArrow />
+      <HeaderBar title={t('Subscription List')} showBackArrow />
       <View style={{ flex: 1 }}>
         {loading || processing ? (
           <View style={styles.loader}>
@@ -237,21 +283,41 @@ const SubscriptionList = () => {
             )}
           </View>
         ) : (
-          <FlatList
-            data={subscriptionData}
-            keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
-            renderItem={renderItem}
-            contentContainerStyle={styles.scrollContent}
-            ListEmptyComponent={
-              <View style={{ padding: wp(5), alignItems: 'center' }}>
-                <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
-                  {t('no_Subscription') || 'No Subscription found.'}
-                </Text>
+          <>
+            {/* 🟢 Active Subscription Header */}
+            {(
+              <View style={{ marginHorizontal: wp(3), marginVertical: hp(1) }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                 {activeSubscription &&  <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary, marginBottom: hp(1) }]}>
+                    {t('Active Subscription')}
+                  </Text>}
+                  <MaterialCommunityIcon onPress={() => navigation.navigate('SubsciptionHistory')} name="clock" size={wp(6)} color={COLORS[theme].textPrimary} />
+                </View>
+                {activeSubscription &&  renderActiveItem({ item: activeSubscription })}
               </View>
-            }
-            onRefresh={fetchSubscription} 
-            refreshing={refreshing}  
-          />
+            )}
+            {/* 🔽 Inactive Subscriptions List */}
+            <FlatList
+              data={subscriptionData}
+              keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
+              renderItem={renderItem}
+              contentContainerStyle={styles.scrollContent}
+              ListHeaderComponent={<View style={{ alignItems: 'vcf' }}>
+                <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
+                  {t('Available Subscriptions')}
+                </Text>
+              </View>}
+              ListEmptyComponent={
+                <View style={{ padding: wp(5), alignItems: 'center' }}>
+                  <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
+                    {t('No Subscription found.')}
+                  </Text>
+                </View>
+              }
+              onRefresh={fetchSubscription}
+              refreshing={refreshing}
+            />
+          </>
         )}
       </View>
       <Modal
@@ -280,7 +346,6 @@ const SubscriptionList = () => {
                 />
               </>
             )}
-
             <Text style={[poppins.regular.h6, { marginTop: hp(2), color: COLORS[theme].textPrimary }]}>
               Are you sure you want to buy this subscription?
             </Text>
@@ -290,7 +355,7 @@ const SubscriptionList = () => {
                 onPress={() => setConfirmVisible(false)}
                 style={[styles.modalButton, { backgroundColor: COLORS[theme].cardBackground, borderColor: "#CCC", borderWidth: wp(0.3) }]}
               >
-                <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].white }]}>Cancel</Text>
+                <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].black }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={confirmPurchase}
@@ -302,6 +367,14 @@ const SubscriptionList = () => {
           </View>
         </View>
       </Modal>
+      <AutoCloseMessageModal
+        visible={modalVisible}
+        message={apiMessage}
+        duration={2000} // closes automatically in 2 seconds
+        onClose={() => setModalVisible(false)}
+        backgroundColor="#28a745" // success color
+        textColor="#fff"
+      />
     </GestureHandlerRootView>
   );
 };

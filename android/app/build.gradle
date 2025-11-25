@@ -2,7 +2,6 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: "com.google.gms.google-services"
-
 // Vector Icons font configuration
 project.ext.vectoricons = [
     iconFontNames: [
@@ -16,18 +15,14 @@ project.ext.vectoricons = [
     ]
 ]
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
-
 // React Native autolink
 react {
     autolinkLibrariesWithApp()
 }
-
 // Proguard toggle (disable for now)
 def enableProguardInReleaseBuilds = false
-
 // JavaScript engine choice (Hermes fallback)
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
-
 android {
     namespace "com.app.bringessedeliverypartner"
     // Android SDK versions
@@ -38,8 +33,8 @@ android {
         applicationId "com.app.bringessedeliverypartner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 20
-        versionName "1.1.1"
+        versionCode 36
+        versionName "1.2.7"
     }
     // Signing configuration (using debug keystore for both)
     signingConfigs {

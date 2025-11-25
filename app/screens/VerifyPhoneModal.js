@@ -56,8 +56,6 @@ const VerifyPhoneModal = ({ visible, onClose, onVerified }) => {
       const data = await fetchData('sendotp', 'POST', {
         phone_number: phoneNumber,
       }, null);
-
-      console.log(data?.otp, "sendotp");
       setvOtp(data?.otp);
       if (data.status) {
         showMessage({ message: 'OTP sent successfully.', type: 'success' });

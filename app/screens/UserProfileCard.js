@@ -11,7 +11,9 @@ import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIc
 const UserProfileCard = () => {
     const { theme } = useTheme();
     const { t } = useTranslation();
-    const profile = useSelector(  state => state.Auth.profile);
+    const profile = useSelector(state => state.Auth.profile);
+    const profileDetails = useSelector(state => state.Auth.profileDetails);
+
     const siteDetails = useSelector(state => state.Auth.siteDetails);
     const navigation = useNavigation();
     const userName = `${profile?.first_name}  ${profile?.last_name}`;
@@ -20,20 +22,22 @@ const UserProfileCard = () => {
             styles.card,
             { backgroundColor: COLORS[theme].background, borderColor: '#ccc' }
         ]}>
-           <TouchableOpacity 
-           onPress={()=>navigation?.navigate('UpdateProfilePic')}
+            <TouchableOpacity
+                onPress={() => {navigation?.navigate('UpdateProfilePic') }}
             >
-           <Image
-                source={{ uri: siteDetails?.media_url + 'drivers/images/' + profile?.driver_image }}
-                style={{ width: wp(15), height: wp(15), borderRadius: wp(7.5), borderWidth: wp(0.5), borderColor: COLORS[theme].primary, borderColor: COLORS[theme].accent }}
-            />
-            <MaterialCommunityIcon
-                name="pencil-circle"
-                size={wp(8)}
-                style={{position:"absolute",marginBottom:wp(2),left:hp(5)}}
-                color={COLORS[theme].textPrimary}
-            />
-           </TouchableOpacity>
+                <Image
+                    source={{ uri: siteDetails?.media_url + 'drivers/images/' + profile?.driver_image }}
+                    style={{ width: wp(15), height: wp(15), borderRadius: wp(7.5), borderWidth: wp(0.5), borderColor: COLORS[theme].primary, borderColor: COLORS[theme].accent }}
+                />
+                {
+                    <MaterialCommunityIcon
+                        name="pencil-circle"
+                        size={wp(8)}
+                        style={{ position: "absolute", marginBottom: wp(2), left: hp(5) }}
+                        color={COLORS[theme].textPrimary}
+                    />
+                }
+            </TouchableOpacity>
             <Text style={[
                 poppins.semi_bold.h6,
                 styles.text,
@@ -49,7 +53,6 @@ const UserProfileCard = () => {
         </View>
     );
 };
-
 const styles = StyleSheet.create({
     card: {
         alignItems: 'center',

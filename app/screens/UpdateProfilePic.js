@@ -92,7 +92,7 @@ const UpdateProfilePic = () => {
         setImageUri(uri);
 
         if (!accessToken || !profileDetails?.driver_id) {
-        ToastAndroid.show('Authorization error.', ToastAndroid.SHORT);
+          ToastAndroid.show('Authorization error.', ToastAndroid.SHORT);
 
           showMessage({ message: 'Authorization error.', type: 'danger' });
           return;
@@ -126,14 +126,12 @@ const UpdateProfilePic = () => {
           if (resultJson?.status === 'true') {
             await fnUpdateProfilePic(resultJson?.driver_image);
           } else {
-        ToastAndroid.show(resultJson?.message, ToastAndroid.SHORT);
-
+            ToastAndroid.show(resultJson?.message, ToastAndroid.SHORT);
             showMessage({ message: resultJson?.message || 'Upload failed.', type: 'danger' });
           }
         } catch (jsonErr) {
           console.error('JSON Parse Error:', jsonErr);
-        // ToastAndroid.show(resultJson?.message, ToastAndroid.SHORT);
-
+          // ToastAndroid.show(resultJson?.message, ToastAndroid.SHORT);
           showMessage({ message: 'Invalid server response.', type: 'danger' });
         }
       } else if (result?.didCancel) {
@@ -142,13 +140,12 @@ const UpdateProfilePic = () => {
         console.error('Camera error: ', result.errorMessage);
         Alert.alert('Camera Error', result.errorMessage);
         ToastAndroid.show(result.errorMessage, ToastAndroid.SHORT);
-
       }
     } catch (err) {
       console.error('Camera launch failed', err);
       // Alert.alert('Error', 'Failed to update profile picture.');
       ToastAndroid.show('Failed to update profile picture.', ToastAndroid.SHORT);
-      
+
     } finally {
       setLoading(false); // End loading in any case
     }
@@ -167,14 +164,11 @@ const UpdateProfilePic = () => {
 
       if (data?.status === 'true') {
         ToastAndroid.show(data?.message, ToastAndroid.SHORT);
-
         showMessage({ message: data?.message, type: 'success' });
-
         dispatch({
           type: 'UPDATE_PROFILE',
           payload: data,
         });
-
         setTimeout(() => {
           navigation?.goBack();
         }, 2000);
@@ -185,13 +179,12 @@ const UpdateProfilePic = () => {
     } catch (error) {
       console.error('updateprofile API Error:', error);
       showMessage({ message: 'Failed to update profile.', type: 'danger' });
-      ToastAndroid.show( 'Failed to update profile.', ToastAndroid.SHORT);
+      ToastAndroid.show('Failed to update profile.', ToastAndroid.SHORT);
     }
   };
   return (
     <View style={[styles.container, { backgroundColor: COLORS[theme].background }]}>
-      <HeaderBar title={t('UpdateProfilePicture') || 'Update Profile Picture'} showBackArrow={true} />
-
+      <HeaderBar title={t('Update Profile Picture') || 'Update Profile Picture'} showBackArrow={true} />
       <TouchableOpacity>
         <Image
           source={{ uri: imageUri }}
@@ -207,7 +200,7 @@ const UpdateProfilePic = () => {
           <ActivityIndicator size="small" color={COLORS[theme].buttonBg} />
         ) : (
           <Text style={[poppins.regular.h6, { color: COLORS[theme].buttonBg, lineHeight: wp(8) }]}>
-            {t('change_pic') || 'Change Pic'}
+            {t('Change Pic')}
           </Text>
         )}
       </TouchableOpacity>

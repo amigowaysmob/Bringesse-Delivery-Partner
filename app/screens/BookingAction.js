@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import HeaderBar from '../components/header';
 import { useSelector } from 'react-redux';
 import { fetchData } from '../api/api';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import { IMAGE_ASSETS } from '../resources/images';
@@ -29,7 +29,7 @@ const BookingAction = ({ route }) => {
   const { t } = useTranslation();
   const profile = useSelector(state => state.Auth.profile);
   const profileDetails = useSelector(state => state.Auth.profileDetails);
-
+  const navigation = useNavigation()
   const { bid, acceptStatus } = route.params;
   const locationWatcher = useRef(null); // to store watch ID
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -42,11 +42,11 @@ const BookingAction = ({ route }) => {
   const siteDetails = useSelector(state => state.Auth?.siteDetails);
   const mapRef = useRef(null);
   const socketRef = useRef(null);
-
   // Fetch booking details
   const fnGetBookingDetails = async () => {
     try {
-      setLoading(true);
+      // setLoading(true);
+      // Alert.alert(bid)
       if (!bid || !profile?.driver_id) return;
       const response = await fetchData('/transport/bookingdetails', 'POST', {
         booking_id: bid,
@@ -54,7 +54,8 @@ const BookingAction = ({ route }) => {
       });
       if (response?.status === true) {
         setBookingDetails(response?.data?.[0]);
-        console.log(response?.data?.[0],"Booking Details");
+        // Alert.alert('Booking Details Fetched',JSON.stringify(response?.data?.[0].drop))
+        console.log(response?.data?.[0], "Booking Details");
       } else {
         ToastAndroid.show(response?.message || 'Failed to fetch booking details', ToastAndroid.SHORT);
       }
@@ -72,7 +73,7 @@ const BookingAction = ({ route }) => {
         setCurrentLoc({ latitude, longitude });
       },
       error => {
-        Alert.alert('Location Error', error.message || 'Failed to get location');
+        // Alert.alert('Location Error', error.message || 'Failed to get location');
       },
       {
         enableHighAccuracy: true,
@@ -123,12 +124,13 @@ const BookingAction = ({ route }) => {
   };
   // Status update handler
   const handleStatusUpdate = async (newStatus, enteredOTP = '') => {
+    // Alert.alert('Confirm', `Are you sure you want to mark as ${newStatus}?`)
+    console.log(newStatus, "newStatus")
     try {
       const payload = {
         booking_id: bid,
         booking_status: newStatus,
         driver_id: profile?.driver_id,
-
       };
       let driverInfo = {
         driver_id: profile?.driver_id,
@@ -140,7 +142,7 @@ const BookingAction = ({ route }) => {
       if (newStatus === 'picked') {
         payload.otp = Number(enteredOTP);
       }
-      else{
+      else {
         payload.completeOtp = Number(enteredOTP);
 
       }
@@ -155,6 +157,7 @@ const BookingAction = ({ route }) => {
         fnGetBookingDetails();
         if (newStatus == 'cancelled' || newStatus == 'completed') {
           await AsyncStorage.removeItem('ACCEPTEDBOOKING');
+          navigation.goBack();
         }
       } else {
         ToastAndroid.show(resp?.message || 'Failed to update status', ToastAndroid.SHORT);
@@ -175,17 +178,26 @@ const BookingAction = ({ route }) => {
       reconnectionAttempts: 5,
       timeout: 10000,
     });
-
     socketRef.current.on('connect', () => {
       console.log('Socket connected:', socketRef.current.id);
       socketRef.current.emit('joinBookingRoom', bid, 'driver');
       handleStatusAccept(); // Custom function to handle booking status acceptance
     });
+    // ✅ Listen for booking cancellation event from server
+    socketRef.current.on('usercancelBooking', ({ bookingId, status }) => {
+      console.log('🚨 Booking cancelled by user:', bookingId, status);
 
+      if (bookingId === bid) {
+        setOrderStatus('cancelled');
+        ToastAndroid.show('User has cancelled the booking', ToastAndroid.LONG);
+        setBookingDetails(prev => ({ ...prev, status: 'cancelled' }));
+        AsyncStorage.removeItem('ACCEPTEDBOOKING');
+        navigation.goBack();
+      }
+    });
     socketRef.current.on('connect_error', (err) => {
       console.log('Socket connect error:', err);
     });
-
     socketRef.current.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason);
     });
@@ -196,8 +208,6 @@ const BookingAction = ({ route }) => {
         const { latitude, longitude } = pos.coords;
         const newLoc = { latitude, longitude };
         setCurrentLoc(newLoc); // Update the current location in state
-        // socketRef?.current.emit('driverLocation', bid, { latitude, longitude });
-        // Emit the new location every time it changes
         if (socketRef.current || socketRef.current.connected) {
           console.log('Emitting driver location:', latitude, longitude);
           socketRef.current.emit('driverLocation', bid, { latitude, longitude });
@@ -214,7 +224,6 @@ const BookingAction = ({ route }) => {
         showsBackgroundLocationIndicator: true, // Shows indicator when app is in background
       }
     );
-
     // Cleanup function when the component unmounts
     return () => {
       if (socketRef.current) {
@@ -228,13 +237,20 @@ const BookingAction = ({ route }) => {
         console.log('Location watcher cleared');
       }
     };
-  }, [bid, profile]); // Dependency array for bid and profile
-
+  }, [bid, profile]);
 
   useEffect(() => {
+    // Run immediately once
     fnGetBookingDetails();
-    // handleStatusAccept();
+    // Run every 2 seconds
+    const interval = setInterval(() => {
+      fnGetBookingDetails();
+    }, 2000);
+  
+    // Cleanup when component unmounts or when `bid` changes
+    return () => clearInterval(interval);
   }, [bid]);
+  
 
   useFocusEffect(
     useCallback(() => {
@@ -306,18 +322,23 @@ const BookingAction = ({ route }) => {
               showsUserLocation
             >
               <Marker coordinate={currentLoc} title="You">
-                <Image source={IMAGE_ASSETS.scooter} style={{ width: wp(10), height: wp(10) }} />
-              </Marker>
 
+                <Image
+                  source={{ uri: siteDetails?.media_url + 'vehicles/' + profileDetails?.vechile_image?.image }}
+                  style={{ width: wp(10), height: wp(10), borderRadius: wp(5) }}
+                />
+              </Marker>
               {pickupCoords && (
                 <Marker
                   coordinate={{ latitude: pickupCoords[1], longitude: pickupCoords[0] }}
                   title="Pickup"
                   pinColor="red"
                 >
-                  <Image
-                    source={{ uri: customer?.profileImage }}
-                    style={{ width: wp(10), height: wp(10), borderRadius: wp(5) }}
+                  <MaterialCommunityIcon
+                    name={'map-marker-circle'}
+                    color={COLORS[theme].accent}
+                    size={wp(6)}
+                    style={{ marginHorizontal: wp(2) }}
                   />
                 </Marker>
               )}
@@ -333,9 +354,12 @@ const BookingAction = ({ route }) => {
           )}
         </>
         :
-        <Image
-          source={{ uri: customer?.profileImage }}
-          style={{ width: wp(80), height: wp(80), borderRadius: wp(0), alignSelf: "center" }}
+       
+        <MaterialCommunityIcon
+          name={'close-circle-outline'}
+          size={wp(25)}
+          style={{ borderRadius: wp(0), alignSelf: "center" }}
+          color={COLORS[theme].accent}
         />
       }
       <View style={[styles.card, { backgroundColor: COLORS[theme].viewBackground, borderWidth: wp(0.5), borderColor: "#ddd" }]}>

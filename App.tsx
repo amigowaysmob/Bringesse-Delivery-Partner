@@ -16,7 +16,7 @@ import {
   Dimensions,
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import notifee from '@notifee/react-native';
+import notifee, { EventType } from '@notifee/react-native';
 import { PermissionsAndroid } from 'react-native';
 import {
   SafeAreaProvider,
@@ -27,16 +27,12 @@ import NetInfo from '@react-native-community/netinfo';
 import { Provider, useSelector } from 'react-redux';
 import { store as configureStore } from 'react-boilerplate-redux-saga-hoc';
 import {
-  PaperProvider,
-  DefaultTheme,
-  configureFonts,
-  MD2LightTheme,
-  MD2DarkTheme,
-  Card,
+  PaperProvider, DefaultTheme,
+  configureFonts, MD2LightTheme,
+  MD2DarkTheme, Card,
 } from 'react-native-paper';
 import InitialRouter from './app/navigation/initial_router';
 import { fontConfig } from './app/resources/fonts';
-import { COLORS } from './app/resources/colors';
 import { ThemeProvider, useTheme } from './app/context/ThemeContext';
 import { LanguageProvider } from './app/context/LanguageContext';
 import { I18nextProvider } from 'react-i18next';
@@ -47,7 +43,6 @@ import { fetchData } from './app/api/api';
 import FlashMessage, { showMessage } from 'react-native-flash-message';
 import { IMAGE_ASSETS } from './app/resources/images';
 
-// === Responsive Utils ===
 const { width, height } = Dimensions.get('window');
 const wp = (p: number) => (width * p) / 100;
 const hp = (p: number) => (height * p) / 100;
@@ -60,7 +55,6 @@ TextInput.defaultProps.allowFontScaling = false;
 
 const store = configureStore({});
 
-// ------- THEME SETUP -------
 const lightTheme = {
   ...MD2LightTheme,
   colors: {
@@ -81,7 +75,6 @@ const darkTheme = {
   fonts: configureFonts({ config: fontConfig, isV3: false }),
 };
 
-// ------- MAIN APP -------
 function App(): React.JSX.Element {
   const [network, setNetwork] = useState(true);
   const [notificationData, setNotificationData] = useState<any>(null);
@@ -89,10 +82,8 @@ function App(): React.JSX.Element {
   // NETWORK CHECK
   useEffect(() => {
     const unsubscribeNetInfo = NetInfo.addEventListener(state => {
-      if (!state.isConnected) {
-        setNetwork(false);
-        openNetworkSettings();
-      } else setNetwork(true);
+      if (!state.isConnected) openNetworkSettings();
+      else setNetwork(true);
     });
     return unsubscribeNetInfo;
   }, []);
@@ -115,7 +106,21 @@ function App(): React.JSX.Element {
     });
   };
 
-  // FIREBASE NOTIFICATIONS
+  // Background notification press handler
+  useEffect(() => {
+    const unsubscribeBackground = notifee.onBackgroundEvent(async ({ type, detail }) => {
+      if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
+        const data = detail.notification?.data;
+        if (data?.scope === 'new_booking') {
+          await AsyncStorage.setItem('NOTIFICATION_DATA', JSON.stringify(data));
+          navigate('PendingHistory'); // Navigate to pending bookings screen
+        }
+      }
+    });
+    return unsubscribeBackground;
+  }, []);
+
+  // FOREGROUND notifications
   useEffect(() => {
     checkPushNotificationPermission();
 
@@ -124,12 +129,21 @@ function App(): React.JSX.Element {
       if (data.scope === 'new_booking') {
         await AsyncStorage.setItem('NOTIFICATION_DATA', JSON.stringify(data));
         setNotificationData(data);
+        await onDisplayNotification({
+          title: 'New Transport Booking',
+          body: data.message || 'You have a new booking request.',
+          data,
+        });
+      } else if (data.message === 'subscription_started') {
+        ToastAndroid.show(data.message, ToastAndroid.LONG);
       }
-      await onDisplayNotification({
-        title: data.scope || 'Notification',
-        body: data.message || 'You have a new message.',
-      });
     });
+
+    // Check stored notification if app opened from killed state
+    (async () => {
+      const storedData = await AsyncStorage.getItem('NOTIFICATION_DATA');
+      if (storedData) setNotificationData(JSON.parse(storedData));
+    })();
 
     return unsubscribe;
   }, []);
@@ -146,7 +160,7 @@ function App(): React.JSX.Element {
     }
   }
 
-  async function onDisplayNotification({ title, body }: { title: string; body: string }) {
+  async function onDisplayNotification({ title, body, data }: { title: string; body: string; data?: any }) {
     await notifee.requestPermission();
     const channelId = await notifee.createChannel({
       id: 'default',
@@ -155,7 +169,15 @@ function App(): React.JSX.Element {
     await notifee.displayNotification({
       title,
       body,
-      android: { channelId, smallIcon: 'ic_launcher' },
+      data,
+      android: {
+        channelId,
+        smallIcon: 'ic_launcher',
+        pressAction: {
+          id: 'default',
+          launchActivity: 'default',
+        },
+      },
     });
   }
 
@@ -180,15 +202,7 @@ function App(): React.JSX.Element {
     </ThemeProvider>
   );
 }
-
-// ------- MAIN APP CONTENT -------
-const MainApp = ({
-  notificationData,
-  clearNotification,
-}: {
-  notificationData: any;
-  clearNotification: () => void;
-}) => {
+const MainApp = ({ notificationData, clearNotification }: { notificationData: any; clearNotification: () => void }) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -196,12 +210,12 @@ const MainApp = ({
   const profile = useSelector((state: any) => state.Auth?.profile);
   const [loading, setLoading] = useState(false);
 
-  // Accept Booking
   const handleAccept = async () => {
     if (!profile?.driver_id) {
       showMessage({ message: 'Invalid driver profile. Please log in again.', type: 'danger' });
       return;
     }
+
     setLoading(true);
     try {
       const res = await fetchData('/transport/updatebooking', 'POST', {
@@ -211,11 +225,20 @@ const MainApp = ({
       });
       if (res?.status) {
         showMessage({ message: res?.message, type: 'success' });
-        ToastAndroid.show(res?.message, ToastAndroid.SHORT);
+        await AsyncStorage.setItem('ACCEPTEDBOOKING', JSON.stringify({
+          message: res?.message,
+          pickupLocation: res?.pickupLocation,
+          dropLocation: res?.dropLocation,
+          bookingUid: notificationData?.booking_uid,
+          bId: notificationData?.booking_id,
+          status: 'accepted',
+        }));
         clearNotification();
-        navigate('BookingAction', { bid: notificationData?.booking_id });
+        navigate('BookingAction', { bid: notificationData?.booking_id, acceptStatus: 'accept' });
       } else {
         showMessage({ message: res?.message, type: 'danger' });
+        await AsyncStorage.removeItem('ACCEPTEDBOOKING');
+        clearNotification();
       }
     } catch (e) {
       showMessage({ message: 'Failed to accept booking', type: 'danger' });
@@ -224,7 +247,7 @@ const MainApp = ({
     }
   };
   const handleReject = async () => {
-    showMessage({ message: 'Booking rejected.', type: 'info' });
+    // showMessage({ message: 'Booking rejected.', type: 'info' });
     clearNotification();
   };
   return (
@@ -234,126 +257,69 @@ const MainApp = ({
         backgroundColor="transparent"
         barStyle={isDark ? 'light-content' : 'dark-content'}
       />
-      <View style={[styles.container, {  }]}>
-        <InitialRouter />
+      <View style={[styles.container]}>
+        <View style={{ flex: 1, opacity: notificationData ? 0.3 : 1, pointerEvents: notificationData ? 'none' : 'auto' }}>
+          <InitialRouter />
+        </View>
+
         <FlashMessage position="top" />
-        {notificationData && (
-          <Card
-            style={[
-              styles.cardContainer,
-              { backgroundColor: isDark ? '#333' : '#FF3B30', marginBottom: insets.bottom + hp(2) },
-            ]}
-          >
-            <View style={styles.cardContent}>
-              <Image source={IMAGE_ASSETS.delivery_boy_image} style={styles.image} />
-              <View style={styles.textContainer}>
-                <Text style={styles.cardTitle}>{notificationData?.message || 'New Booking!'}</Text>
-                <Text style={styles.cardSubtitle}>Booking ID: {notificationData?.booking_uid}</Text>
-                <Text style={styles.label}>Pickup:</Text>
-                <Text style={styles.value}>{notificationData?.pickupLocation}</Text>
-                <Text style={styles.label}>Drop:</Text>
-                <Text style={styles.value}>{notificationData?.dropLocation}</Text>
-                {loading ? (
-                  <ActivityIndicator size="small" color="#fff" style={{ marginTop: hp(1.5) }} />
-                ) : (
-                  <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                      style={[styles.button, styles.rejectButton]}
-                      onPress={handleReject}
-                    >
-                      <Text style={styles.buttonText}>Reject</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.button, styles.acceptButton]}
-                      onPress={handleAccept}
-                    >
-                      <Text style={styles.buttonText}>Accept</Text>
-                    </TouchableOpacity>
+
+        {notificationData && profile?.driver_id && (
+          <View style={styles.overlayContainer}>
+            <TouchableOpacity activeOpacity={1} style={styles.overlayTouchable}>
+              <Card style={[styles.cardContainer, { backgroundColor: isDark ? '#333' : '#FF3B30' }]}>
+                <View style={styles.cardContent}>
+                  <Image source={IMAGE_ASSETS.delivery_boy_image} style={styles.image} />
+                  <View style={styles.textContainer}>
+                    <Text style={styles.cardTitle}>{notificationData?.message || 'New Booking!'}</Text>
+                    <Text style={styles.cardSubtitle}>Booking ID: {notificationData?.booking_uid}</Text>
+                    <Text style={styles.label}>Pickup:</Text>
+                    <Text style={styles.value}>{notificationData?.pickupLocation}</Text>
+                    {notificationData?.dropLocation && <>
+                      <Text style={styles.label}>Drop:</Text>
+                      <Text style={styles.value}>{notificationData?.dropLocation}</Text>
+                    </>}
+                    {loading ? <ActivityIndicator size="small" color="#fff" style={{ marginTop: hp(1.5) }} /> :
+                      <View style={styles.buttonRow}>
+                        <TouchableOpacity style={[styles.button, styles.rejectButton]} onPress={handleReject}>
+                          <Text style={[styles.buttonText, { color: '#ff0000' }]}>Close</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.button, styles.acceptButton]} onPress={handleAccept}>
+                          <Text style={styles.buttonText}>Accept</Text>
+                        </TouchableOpacity>
+                      </View>}
                   </View>
-                )}
-              </View>
-            </View>
-          </Card>
+                </View>
+              </Card>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </SafeAreaView>
   );
 };
 
-// ------- STYLES -------
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    height: '120%',
+  safeArea: { flex: 1, height: '120%' },
+  container: { flex: 1 },
+  overlayContainer: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 999,
   },
-
-  container: {
-    flex: 1,
-    height: '100%',
-  },
-  cardContainer: {
-    position: 'absolute',
-    width: wp(92),
-    alignSelf: 'center',
-    borderRadius: 14,
-    padding: wp(4),
-    elevation: 8,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  image: {
-    width: wp(22),
-    height: wp(22),
-    resizeMode: 'contain',
-    marginRight: wp(3),
-  },
-  textContainer: {
-    flex: 1,
-  },
-  cardTitle: {
-    color: '#fff',
-    fontSize: wp(5),
-    fontWeight: 'bold',
-  },
-  cardSubtitle: {
-    color: '#fff',
-    fontSize: wp(3.8),
-    marginVertical: 3,
-  },
-  label: {
-    color: '#fff',
-    fontSize: wp(3.6),
-    fontWeight: '600',
-  },
-  value: {
-    color: '#fff',
-    fontSize: wp(3.5),
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    marginTop: hp(1.5),
-    justifyContent: 'space-between',
-  },
-  button: {
-    flex: 1,
-    paddingVertical: hp(1.8),
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: wp(1.5),
-  },
-  acceptButton: {
-    backgroundColor: '#4CAF50',
-  },
-  rejectButton: {
-    backgroundColor: '#FF4D4F',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: wp(4),
-  },
+  overlayTouchable: { flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' },
+  cardContainer: { position: 'absolute', width: wp(92), alignSelf: 'center', borderRadius: 14, padding: wp(4), elevation: 8 },
+  cardContent: { flexDirection: 'row', alignItems: 'flex-start' },
+  image: { width: wp(22), height: wp(22), resizeMode: 'contain', marginRight: wp(3) },
+  textContainer: { flex: 1 },
+  cardTitle: { color: '#fff', fontSize: wp(5), fontWeight: 'bold' },
+  cardSubtitle: { color: '#fff', fontSize: wp(3.8), marginVertical: 3 },
+  label: { color: '#fff', fontSize: wp(3.6), fontWeight: '600' },
+  value: { color: '#fff', fontSize: wp(3.5) },
+  buttonRow: { flexDirection: 'row', marginTop: hp(1.5), justifyContent: 'space-between' },
+  button: { flex: 1, paddingVertical: hp(1.8), borderRadius: 8, alignItems: 'center', marginHorizontal: wp(1.5) },
+  acceptButton: { backgroundColor: '#4CAF50' },
+  rejectButton: { backgroundColor: '#fff' },
+  buttonText: { color: '#fff', fontWeight: '600', fontSize: wp(4) },
 });
 
 export default App;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Modal, View, Text, StyleSheet, TouchableOpacity,
     Linking, Platform,
+    Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
@@ -97,7 +98,6 @@ const VersionUpgradeModal = () => {
                             `A new version (${latestVersion}) of the app is available. You are currently using version ${currentVersion}.`
                         )}
                     </Text>
-
                     <View style={styles.infoContainer}>
                         <View
                             style={[styles.versionBox, { backgroundColor: COLORS[theme].card }]}

@@ -5,7 +5,7 @@ import SplashScreen from '../screens/splash-screen';
 import LoginScreen from '../screens/login-screen';
 import HomeTabRouter from './home_router';
 import GetStartedScreen from '../screens/GetStartedScreen';
-import PersonalInfoScreen from '../screens/tabs/Edit-profile';
+import PersonalInfoScreen from '../screens/tabs/Edit-profile/PersonalInfo';
 import EditProfile from '../screens/tabs/Edit-profile/editProfile';
 import RegisterScreen from '../screens/tabs/Edit-profile/RegisterScreen';
 import WalletHistory from '../screens/WalletHistory';
@@ -20,6 +20,12 @@ import PaymentDocs from '../screens/tabs/Edit-profile/PaymentDocs';
 import UploadDocuments from '../screens/UploadDocuments';
 import { navigationRef } from './RootNavigation';
 import RevenueScreen from '../screens/RevenueScreen';
+import ForgetPassword from '../screens/tabs/Edit-profile/ForgetPassword';
+import SubsciptionHistory from '../screens/SubsciptionHistory';
+import PendingHistory from '../screens/PendingHistory';
+import PendingOrdersHistory from '../screens/PendingOrdersHistory';
+import BookingProductAction from '../screens/BookingProductAction';
+import UploadDriverDocs from '../screens/UploadDriverDocs';
 const Stack = createNativeStackNavigator();
 const MyTheme = {
   dark: true,
@@ -61,11 +67,13 @@ function InitialRouter() {
         <Stack.Screen name="PaymentDocs" component={PaymentDocs} />
         <Stack.Screen name="UploadDocuments" component={UploadDocuments} />
         <Stack.Screen name="RevenueScreen" component={RevenueScreen} />
-
-        
-        
+        <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
+        <Stack.Screen name="SubsciptionHistory" component={SubsciptionHistory} />
+        <Stack.Screen name="PendingHistory" component={PendingHistory} />
+        <Stack.Screen name="PendingOrdersHistory" component={PendingOrdersHistory} />
+        <Stack.Screen name="BookingProductAction" component={BookingProductAction} />
+        <Stack.Screen name="UploadDriverDocs" component={UploadDriverDocs} />
       </Stack.Navigator>
-
     </NavigationContainer>
   );
 }

@@ -27,7 +27,7 @@ const BookingDetailsModal = ({ visible, onClose, booking, theme }) => {
     totalDistance,
     estimatedFare,
     createdAt,
-    vehicle
+    vehicle,drop
   } = booking;
 
   const makeCall = (number) => {
@@ -66,8 +66,14 @@ const BookingDetailsModal = ({ visible, onClose, booking, theme }) => {
             <DetailRow icon="identifier" label="Booking ID" value={uniqueId} theme={theme} />
             <DetailRow icon="check-circle-outline" label="Status" value={status} theme={theme} />
             <DetailRow icon="map-marker" label="Pickup Address" value={pickupAddress} theme={theme} />
-            <DetailRow icon="map-marker-distance" label="Drop Address" value={dropAddress} theme={theme} />
+            {
+              drop && 
+              <DetailRow icon="map-marker-distance" label="Drop Address" value={dropAddress} theme={theme} />
+            }
+            {
+              customer?.name && 
             <DetailRow icon="account" label="Customer Name" value={customer?.name} theme={theme} />
+            }
             <DetailRow icon="car" label="Vehicle Type" value={vehicle?.name} theme={theme} />
             {/* <DetailRow icon="lock" label="OTP" value={otp || 'N/A'} theme={theme} /> */}
             {/* <DetailRow icon="map-marker-path" label="Distance" value={`${totalDistance} km`} theme={theme} /> */}

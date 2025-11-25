@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   ToastAndroid,
   PermissionsAndroid,
+  Keyboard,
+  Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import FlashMessage, { showMessage } from 'react-native-flash-message';
@@ -24,9 +26,7 @@ import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
 
-// Google Maps Geocoding API Key (replace with your own)
 const GOOGLE_MAPS_API_KEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
-
 const PaymentDocs = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -42,22 +42,32 @@ const PaymentDocs = () => {
     street2: '',
     city: '',
     district: '',
-    state_with_code: '', // Combined field: State, Country Code
+    state_with_code: '',
     postal_code: '',
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    fetchProfileData();
+    getCurrentLocationAndSetStateCountry();
+
+    // Keyboard event listeners for ScrollView padding
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleChange = (field, value) => {
     setFormValues(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: null }));
   };
-
-  useEffect(() => {
-    fetchProfileData();
-    getCurrentLocationAndSetStateCountry();
-  }, []);
 
   const fetchProfileData = async () => {
     if (!profileDetails?.driver_id) return;
@@ -80,7 +90,7 @@ const PaymentDocs = () => {
           street2: details.street2 || '',
           city: details.city || '',
           district: details.district || '',
-          state_with_code: `${details.state || ''}, ${details.country_code || 'IN'}`,
+          state_with_code: `${details?.state || ''}, ${details?.country_code || 'IN'}`,
           postal_code: details.postal_code?.toString() || '',
         });
       }
@@ -91,12 +101,9 @@ const PaymentDocs = () => {
     }
   };
 
-  // Request permission and get current location
   const getCurrentLocationAndSetStateCountry = async () => {
     try {
       setLoadingLocation(true);
-
-      // For Android, request permission for location
       if (Platform.OS === 'android') {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -108,20 +115,18 @@ const PaymentDocs = () => {
             buttonPositive: 'OK',
           }
         );
-
-        // If permission is denied, return early and do not fetch location
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
           console.log('Location permission denied');
           setLoadingLocation(false);
           return;
         }
       }
-      // Get the current position using Geolocation API
       Geolocation.getCurrentPosition(
         position => {
           const { latitude, longitude } = position.coords;
           console.log('Location coordinates:', latitude, longitude);
-          // fetchStateCountryFromCoords(latitude, longitude);
+          // Optionally call reverse geocoding here
+          setLoadingLocation(false);
         },
         error => {
           console.error('Geolocation error:', error);
@@ -131,45 +136,6 @@ const PaymentDocs = () => {
       );
     } catch (err) {
       console.error('Location permission error:', err);
-      setLoadingLocation(false);
-    }
-  };
-
-  // Use Google Maps Geocoding API to get state and country code from lat/lon
-  const fetchStateCountryFromCoords = async (lat, lon) => {
-    try {
-      // Using Google Maps Geocoding API
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_MAPS_API_KEY}`
-      );
-      const data = await response.json();
-
-      if (data.status === 'OK') {
-        const result = data.results[0];
-        const addressComponents = result.address_components;
-        let state = '';
-        let countryCode = '';
-
-        // Parse the address components to extract state and country code
-        addressComponents.forEach(component => {
-          if (component.types.includes('administrative_area_level_1')) {
-            state = component.long_name;
-          }
-          if (component.types.includes('country')) {
-            countryCode = component.short_name;
-          }
-        });
-
-        if (state && countryCode) {
-          setFormValues(prev => ({
-            ...prev,
-            state_with_code: `${state}, ${countryCode}`,
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Google Maps Geocoding Error:', error);
-    } finally {
       setLoadingLocation(false);
     }
   };
@@ -184,20 +150,15 @@ const PaymentDocs = () => {
       street1: { label: 'Street 1', max: 100, min: 10 },
       street2: { label: 'Street 2', max: 100, min: 10 },
       city: { label: 'City', max: 50 },
-      // state_with_code: { label: 'State, Country Code', max: 80 },
       postal_code: { label: 'Postal Code', max: 8 },
     };
 
     for (const field in requiredFields) {
       const value = formValues[field]?.trim() || '';
       const { label, max, min } = requiredFields[field];
-      if (!value) {
-        newErrors[field] = `${label} is required.`;
-      } else if (value.length > max) {
-        newErrors[field] = `Max ${max} characters allowed.`;
-      } else if (min && value.length < min) {
-        newErrors[field] = `Min ${min} characters required.`;
-      }
+      if (!value) newErrors[field] = `${label} is required.`;
+      else if (value.length > max) newErrors[field] = `Max ${max} characters allowed.`;
+      else if (min && value.length < min) newErrors[field] = `Min ${min} characters required.`;
     }
 
     setErrors(newErrors);
@@ -206,7 +167,7 @@ const PaymentDocs = () => {
 
   const handleSubmit = async () => {
     if (!validateFields()) return;
-
+    // Alert.alert(formValues.district);
     setLoading(true);
     try {
       const [state, countryCode] = (formValues.state_with_code || '')
@@ -228,12 +189,10 @@ const PaymentDocs = () => {
         postal_code: formValues.postal_code,
       };
 
-      const respdata = await fetchData(
-        'razorurl',
-        'POST',
-        payload,
-        { driverId: profileDetails.driver_id }
-      );
+      const respdata = await fetchData('razorurl', 'POST', payload, {
+        driverId: profileDetails.driver_id,
+      });
+
       if (respdata?.status === 'true') {
         await handleUpdatePaymentStatus();
       } else {
@@ -241,7 +200,7 @@ const PaymentDocs = () => {
       }
     } catch (error) {
       console.error('Submit API Error:', error);
-      showMessage({ message: 'Something went wrong while submitting.', type: 'danger' });
+      showMessage({ message: respdata?.message, type: 'danger' });
     } finally {
       setLoading(false);
     }
@@ -249,31 +208,23 @@ const PaymentDocs = () => {
 
   const handleUpdatePaymentStatus = async () => {
     try {
-      if (!profileDetails?.driver_id) {
-        console.warn('No driver ID available');
-        return;
-      }
-      const respdata = await fetchData(
-        'getrazorpayaccountdetail',
-        'POST',
-        { driver_id: profileDetails.driver_id }
-      );
+      if (!profileDetails?.driver_id) return;
+
+      const respdata = await fetchData('getrazorpayaccountdetail', 'POST', {
+        driver_id: profileDetails.driver_id,
+      });
+
       const message = respdata?.message || 'Update completed.';
       if (respdata?.status === 'true') {
         showMessage({ message, type: 'success' });
         ToastAndroid.show(message, ToastAndroid.SHORT);
-        if (navigation?.goBack) {
-          navigation.goBack();
-        }
+        navigation.goBack?.();
       } else {
         showMessage({ message: message || 'Update failed.', type: 'danger' });
       }
     } catch (error) {
       console.error('Status update error:', error);
-      showMessage({
-        message: 'Error updating status.',
-        type: 'danger',
-      });
+      showMessage({ message: 'Error updating status.', type: 'danger' });
     }
   };
 
@@ -289,7 +240,7 @@ const PaymentDocs = () => {
         editable={editable}
         style={[
           styles.input,
-          { borderColor: errors[field] ? 'red' : '#ccc' },
+          { borderColor: errors[field] ? 'red' : '#ccc', color: COLORS[theme].textPrimary },
         ]}
         onChangeText={text => handleChange(field, text)}
       />
@@ -300,15 +251,16 @@ const PaymentDocs = () => {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: COLORS[theme].background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <HeaderBar showBackArrow={true} title={t('Bank Details')} />
       <FlashMessage position="top" />
-      <View 
-      pointerEvents={!profileDetails?.payment_id ? 'auto' : 'none'}
-       >
+      <View pointerEvents={!profileDetails?.payment_id ? 'auto' : 'none'}>
         <ScrollView
-          style={{ paddingHorizontal: wp(4), marginTop: wp(0.5) }}
+          style={styles.scrollView}
+          contentContainerStyle={{
+            paddingBottom: keyboardVisible ? hp(40) : hp(8),
+          }}
           showsVerticalScrollIndicator={false}
         >
           {renderTextField('Account Name', 'account_name', 50)}
@@ -318,50 +270,21 @@ const PaymentDocs = () => {
           {renderTextField('Street 1', 'street1', 100)}
           {renderTextField('Street 2', 'street2', 100)}
           {renderTextField('City', 'city', 50)}
-          {/* Show loading spinner if location fetching */}
-          {/* <View style={styles.fieldContainer}>
-          <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>
-            State, Country Code<Text style={{ color: 'red' }}>*</Text>
-          </Text>
-          {loadingLocation ? (
-            <ActivityIndicator size="small" color={COLORS[theme].accent} />
-          ) : (
-            <TextInput
-              disabled={true}
-              placeholder="State, Country Code"
-              value={formValues.state_with_code}
-              maxLength={80}
-              style={[
-                styles.input,
-                { borderColor: errors.state_with_code ? 'red' : '#ccc' },
-              ]}
-              // onChangeText={text => handleChange('state_with_code', text)}
-            />
-          )}
-          {errors.state_with_code && (
-            <Text style={styles.errorText}>{errors.state_with_code}</Text>
-          )}
-        </View> */}
           {renderTextField('Postal Code', 'postal_code', 8)}
 
-          {
-            !profileDetails?.payment_id &&
-            <View style={{ marginTop: hp(2), marginBottom: hp(3) }}>
+          {!profileDetails?.payment_id && (
+            <View style={styles.submitButtonContainer}>
               <TouchableOpacity
                 onPress={handleSubmit}
                 activeOpacity={0.8}
                 disabled={loading}
-                style={{
-                  backgroundColor: COLORS[theme].accent,
-                  paddingVertical: hp(1.2),
-                  borderRadius: 5,
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                }}
+                style={[styles.submitButton, { backgroundColor: COLORS[theme].accent }]}
               >
                 {loading && (
-                  <ActivityIndicator color={COLORS[theme].white} style={{ marginRight: 10 }} />
+                  <ActivityIndicator
+                    color={COLORS[theme].white}
+                    style={{ marginRight: 10 }}
+                  />
                 )}
                 <Text
                   style={[
@@ -373,26 +296,18 @@ const PaymentDocs = () => {
                 </Text>
               </TouchableOpacity>
             </View>
-          }
-         
+          )}
         </ScrollView>
-        
       </View>
     </KeyboardAvoidingView>
   );
 };
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  fieldContainer: {
-    marginBottom: hp(2),
-  },
-  label: {
-    marginBottom: hp(0.8),
-    fontSize: wp(3.8),
-    fontWeight: '500',
-  },
+  container: { flex: 1 },
+  scrollView: { paddingHorizontal: wp(4), marginTop: wp(1) },
+  fieldContainer: { marginBottom: hp(2) },
+  label: { marginBottom: hp(0.8), fontSize: wp(3.8), fontWeight: '500' },
   input: {
     backgroundColor: 'transparent',
     height: hp(5.5),
@@ -400,10 +315,15 @@ const styles = StyleSheet.create({
     borderRadius: wp(1),
     paddingHorizontal: wp(3),
   },
-  errorText: {
-    color: 'red',
-    marginTop: hp(0.5),
-    fontSize: wp(3.5),
+  errorText: { color: 'red', marginTop: hp(0.5), fontSize: wp(3.5) },
+  submitButtonContainer: { marginTop: hp(2), marginBottom: hp(3) },
+  submitButton: {
+    paddingVertical: hp(1.2),
+    borderRadius: 5,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
 });
+
 export default PaymentDocs;

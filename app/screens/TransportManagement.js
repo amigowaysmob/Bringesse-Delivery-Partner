@@ -15,7 +15,6 @@ import { fetchData } from '../api/api';
 import { useSelector } from 'react-redux';
 import DeviceInfo from 'react-native-device-info';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-
 const tabs = ['ongoing', 'completed'];
 
 const TransportManagement = () => {
@@ -133,6 +132,7 @@ const TransportManagement = () => {
     }
   };
 
+
   // Open dialer with phone number
   const handleCall = (phone) => {
     if (phone) {
@@ -183,11 +183,17 @@ const TransportManagement = () => {
         />
       </View>
       <View style={styles.textContainer}>
-        <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
-          {/* {item.categoryName || 'Category'} */}
-          {JSON.stringify(item)}
-        </Text>
-
+        <View style={{flexDirection:"row",justifyContent:"space-between"}}>
+          <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
+            {item.categoryName || 'Category'}
+          </Text>
+          {
+            item?.cutomerReview?.ratings &&
+            <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
+              {item?.cutomerReview?.ratings} ★
+            </Text>
+          }
+        </View>
         <Text style={[poppins.bold.h7, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
           Booking ID: {item.uniqueId}
         </Text>

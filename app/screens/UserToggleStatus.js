@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, Text, Switch, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Switch, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { COLORS } from '../resources/colors';
 import { wp } from '../resources/dimensions';
@@ -10,122 +10,191 @@ import DeviceInfo from 'react-native-device-info';
 import { fetchData } from '../api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-
-const UserToggleStatus = ({profileStatus}) => {
+import useCurrentLocation from '../hooks/useCurrentLocation';
+const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
     const [isOnline, setIsOnline] = useState(null);
-    const [loading, setLoading] = useState(false); // Loader state
+    const [loading, setLoading] = useState(false);
     const { theme } = useTheme();
     const { t } = useTranslation();
     const dispatch = useDispatch();
+    const navigation = useNavigation();
     const profile = useSelector(state => state.Auth.profile);
     const accessToken = useSelector(state => state.Auth.accessToken);
-    const navigation = useNavigation();
-
+    const profileDetails = useSelector(state => state.Auth.profileDetails);
+    const { currLocation, locationLoading, address } = useCurrentLocation();
+    const locationIntervalRef = useRef(null);
+    // Initial fetch
     useEffect(() => {
-        // Fetch the profile data only on initial load
         fetchProfileData();
-    }, []);
+    }, [isOnline]);
 
-    // Fetch the profile data when the component loads
-    const fetchProfileData = async () => {
-        // if (!accessToken || !profile?.driver_id) return;
-        const id = await DeviceInfo.getUniqueId();
+    // Auto-update driver location every 10 seconds if online
+    useEffect(() => {
+        if (!isOnline) return; // Don't update when offline
+        if (locationIntervalRef.current)
+            clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = setInterval(() => {
+            sendLocation(currLocation, address);
+        }, 10000);
+        return () => {
+            clearInterval(locationIntervalRef.current);
+        };
+    }, [isOnline, currLocation, address]);
+    // ---------------------------------------------
+    // SEND DRIVER LOCATION
+    // ---------------------------------------------
+    const sendLocation = async (loc, addr) => {
+        if (!accessToken || !profile?.driver_id) return;
+        if (!loc) return;
+        const deviceId = await DeviceInfo.getUniqueId();
+        const payload = {
+            driver_id: profile.driver_id,
+            location: addr || '',
+            lat: loc.latitude,
+            lon: loc.longitude,
+        };
         try {
-            setLoading(true); // Start loading when fetching
+            const data = await fetchData('updateprofile', 'PATCH', payload, {
+                Authorization: `${accessToken}`,
+                driver_id: profile.driver_id,
+                device_id: deviceId,
+            });
+            dispatch({ type: 'UPDATE_PROFILE', payload: data });
+        } catch (error) {
+            console.error('Error sending location:', error);
+        }
+    };
+
+    // ---------------------------------------------
+    // FETCH DRIVER PROFILE DATA
+    // ---------------------------------------------
+    const fetchProfileData = async () => {
+        if (!accessToken || !profile?.driver_id) return;
+
+        try {
+            setLoading(true);
             const data = await fetchData('profile/' + profile?.driver_id, 'GET', null, {
                 Authorization: `${accessToken}`,
                 driver_id: profile.driver_id,
                 device_id: await DeviceInfo.getUniqueId(),
             });
-            console.log(data, 'Profile Data Fetched');
+
             if (!data?.ok && data?.status == 'false') {
-                // Alert.alert('Session Expired', 'Please log in again.', )
                 await AsyncStorage.clear();
                 navigation.reset({
                     index: 0,
                     routes: [{ name: 'login-screen' }],
                 });
+                return;
             }
-
-            setIsOnline(data?.live_status ? true : false); // Set the live status
+            setIsOnline(data?.live_status ? true : false);
+            // console.log(profileDetails,"UPDATE_PROFILE")
             dispatch({
                 type: 'PROFILE_DETAILS',
                 payload: data,
             });
         } catch (error) {
-            console.error('profile API Error:', error);
+            console.error('Profile API Error:', error);
         } finally {
-            setLoading(false);  // End loading
+            setLoading(false);
         }
     };
-
-    // Function to toggle online/offline status
+    // ---------------------------------------------
+    // TOGGLE DRIVER ONLINE / OFFLINE
+    // ---------------------------------------------
     const toggleSwitch = async () => {
         if (!accessToken || !profile?.driver_id) return;
-        // Avoid unnecessary toggle if the value is already the same
-        // if (isOnline == null) {
-        // Alert.alert('test')
-        setLoading(true);  // Show loader
+        setLoading(true);
         const deviceId = await DeviceInfo.getUniqueId();
-        const newStatus = isOnline ? '0' : '1'; // Toggle live status
-        const payLoad = {
+        const newStatus = isOnline ? '0' : '1';
+
+        const payload = {
             driver_id: profile.driver_id,
             live_status: newStatus,
+            location: addressCurrent || '',
+            lat: location?.latitude,
+            lon: location?.longitude,
         };
+
         try {
-            // Perform the API call only when the state is being updated
-            const data = await fetchData('updateprofile', 'PATCH', payLoad, {
+            const data = await fetchData('updateprofile', 'PATCH', payload, {
                 Authorization: `${accessToken}`,
                 driver_id: profile.driver_id,
                 device_id: deviceId,
             });
-            console.log('Update Profile Response:', data);
-            // Fetch updated profile data after the update
+
             if (!data?.ok && data?.status == 'false') {
-                // Alert.alert('Session Expired', 'Please log in again.', )
                 await AsyncStorage.clear();
                 navigation.reset({
                     index: 0,
                     routes: [{ name: 'login-screen' }],
                 });
+                return;
             }
-            fetchProfileData();
             dispatch({
                 type: 'UPDATE_PROFILE',
                 payload: data,
             });
+
+            setIsOnline(newStatus === '1');
         } catch (error) {
             console.error('Error updating profile status:', error);
         } finally {
-            setLoading(false);  // Hide loader
+            setLoading(false);
         }
-        // }
     };
 
-    const onlineText = t('Online') || 'Online';
-    const offlineText = t('Offline') || 'Offline';
-
-    if (!profileStatus) return null; // Hide component if profileStatus is true
+    if (!profileStatus) return null;
+    const onlineText = 'You are Online';
+    const offlineText = 'You’ll miss new orders when offline.';
+    // Alert.alert(profileDetails?.subscription_status)
 
     return (
         <View style={[styles.card, { backgroundColor: COLORS[theme].background }]}>
-            <Text style={[poppins.semi_bold.h7, styles.statusText, { color: COLORS[theme].primary }]}>
-                {isOnline ? onlineText : offlineText}
-            </Text>
+            {(profileDetails?.partner_type.includes('Transport') &&
+                profileDetails?.subscription_status == 0) ? (
+                <>
+                    <Text style={[poppins.semi_bold.h6, styles.statusText, { color: COLORS[theme].primary }]}>
+                        Subscription
+                    </Text>
 
-            <View style={styles.switchContainer}>
-                {loading ? (
-                    <ActivityIndicator size="small" color={COLORS[theme].accent} />
-                ) : (
-                    <Switch
-                        trackColor={{ false: "#999", true: COLORS[theme].accent + '50' }}
-                        thumbColor={isOnline ? COLORS[theme].accent : COLORS[theme].white}
-                        onValueChange={toggleSwitch}
-                        value={isOnline}
-                        disabled={loading}  // Disable switch while loading
-                    />
-                )}
-            </View>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('SubscriptionList')}
+                        style={{
+                            backgroundColor: COLORS[theme].accent,
+                            padding: wp(1.5),
+                            borderRadius: wp(1),
+                        }}>
+                        <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].white }]}>
+                            Subscribe Now
+                        </Text>
+                    </TouchableOpacity>
+                </>
+            ) : (
+                <>
+                    <Text style={[
+                        poppins.semi_bold.h7,
+                        styles.statusText,
+                        { color: COLORS[theme].primary, maxWidth: wp(70) }
+                    ]}>
+                        {isOnline ? onlineText : offlineText}
+                    </Text>
+
+                    <View style={styles.switchContainer}>
+                        {loading ? (
+                            <ActivityIndicator size="small" color={COLORS[theme].accent} />
+                        ) : (
+                            <Switch
+                                trackColor={{ false: "#999", true: COLORS[theme].accent + '50' }}
+                                thumbColor={isOnline ? COLORS[theme].accent : COLORS[theme].white}
+                                onValueChange={toggleSwitch}
+                                value={isOnline}
+                                disabled={loading}
+                            />
+                        )}
+                    </View>
+                </>
+            )}
         </View>
     );
 };
@@ -140,14 +209,17 @@ const styles = StyleSheet.create({
         borderRadius: wp(2),
         borderWidth: wp(0.3),
         borderColor: '#ccc',
-        margin: wp(1),
-    },
-    statusText: {
-        fontSize: wp(5),
+        position: 'relative',
+        top: wp(2),
+        width: wp(95),
+        alignSelf: 'center',
     },
     switchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    statusText: {
+        fontSize: wp(4),
     },
 });
 
