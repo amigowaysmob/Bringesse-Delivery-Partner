@@ -8,7 +8,8 @@ const IMAGE_ASSETS = {
   schedule: require('../assets/images/schedule.png'),
   subscription: require('../assets/images/subscription.png'),
   loading: require('../assets/images/loading.json'),  
+  bringesUser:require('../assets/images/user.png'),
+  seller:require('../assets/images/seller.jpg'),
 };
-
-
 export { IMAGE_ASSETS };
+

@@ -10,7 +10,6 @@ import { fetchData } from '../api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
 const UserDeliveryOrdersCount = ({ profileStatus, addressCurrent, location, notificationData }) => {
     const [loading, setLoading] = useState(false);
     const [count, setCount] = useState(0);
@@ -100,6 +99,7 @@ const UserDeliveryOrdersCount = ({ profileStatus, addressCurrent, location, noti
     useEffect(() => {
         toggleSwitch();
     }, [addressCurrent, location]);
+
     if (!profileStatus || count === 0) return null;
     return (
         <TouchableOpacity

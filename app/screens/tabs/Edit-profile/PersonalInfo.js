@@ -37,7 +37,7 @@ const PersonalInfoScreen = () => {
     documentType: '',
     transportOptions: [],  // changed from acceptedTerms boolean to array of selected transport options
   });
-
+  const [transparentOption, settransparentOption] = useState([]);
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
@@ -69,9 +69,7 @@ const PersonalInfoScreen = () => {
       setLoading(false);  // End loading
     }
   };
-
   useEffect(() => {
-    console?.log(profileDetails?.driver_documents.length, "profileDetails")
     const allServices = siteDetails?.service_type || [];
     if (!formValues?.transportOptions?.length) {
       setServiceTypes([]);
@@ -99,7 +97,6 @@ const PersonalInfoScreen = () => {
       setFormValues(prev => ({ ...prev, serviceType: updatedSelected }));
     }
   }, [siteDetails, formValues.transportOptions]);
-
 
   const [errors, setErrors] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
@@ -232,14 +229,6 @@ const PersonalInfoScreen = () => {
     setModalVisible(false);
   };
 
-  const fetchVehicleType = async (item) => {
-    setVehicleTypes(
-      item?.vehicles?.map(service => ({
-        label: service.name,
-        value: service._id,
-      })) || []
-    );
-  };
 
   useEffect(() => {
     if (profileDetails) {
@@ -257,34 +246,54 @@ const PersonalInfoScreen = () => {
   }, [profileDetails]);
 
   useEffect(() => {
-    // profileDetails?.vehicle_category
-    // Assuming profileDetails?.vehicle_category is defined
-    const filteredVehicles = siteDetails?.vehicle_type?.filter(vehicle =>
-      vehicle.category === profileDetails?.vehicle_category
-    ) || [];  // Fallback to empty array if vehicle_type is undefined
-    // Set the vehicle types after mapping the filtered array
+    if (!siteDetails || !profileDetails?.vehicle_category) return;
+    const filteredVehicles = siteDetails?.vehicle_type?.filter(
+      vehicle => vehicle.category === profileDetails.vehicle_category
+    ) || [];
     setVehicleTypes(
       filteredVehicles.map(vehicle => ({
         label: vehicle.name,
-        value: vehicle._id
-      })) || []  // Fallback in case the map operation produces undefined
+        value: vehicle._id,
+        mode: vehicle.mode || [],
+      }))
     );
-    // console?.log(vehicleTypes, "siteDetails?.vehicle_type")
+    // 3️⃣ Get matched category from `vehicle_category`
+    const selectedCategory = siteDetails?.vehicle_category?.find(
+      category => category._id === profileDetails.vehicle_category
+    );
+  
+    // 4️⃣ Set mode from selected category
+    settransparentOption(selectedCategory?.mode || []);
+  
+    // 5️⃣ Set vehicle categories
     setVehicleCategories(
       siteDetails?.vehicle_category?.map(category => ({
         label: category.name,
         value: category._id,
-        vehicles: category?.vehicles,
-
+        vehicles: category.vehicles,
+        mode: category.mode || [],
       })) || []
     );
+  
+    // 6️⃣ Set service types
     setServiceTypes(
       siteDetails?.service_type?.map(service => ({
         label: service.name,
         value: service._id,
       })) || []
     );
-  }, [siteDetails]);
+  }, [siteDetails, profileDetails?.vehicle_category]);
+  
+
+  const fetchVehicleType = async (item) => {
+    settransparentOption(item?.mode || []);
+    setVehicleTypes(
+      item?.vehicles?.map(service => ({
+        label: service.name,
+        value: service._id,
+      })) || []
+    );
+  };
 
 
   const renderDropdownField = (label, value, onPress, error) => (
@@ -432,7 +441,7 @@ const PersonalInfoScreen = () => {
               <View style={{ marginBottom: hp(2), }}>
                 {renderLabel('Select Transport Option', true)}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingRight: wp(10) }}>
-                  {['Transport', 'Delivery'].map(option => renderTransportCheckbox(option))}
+                  {transparentOption.map(option => renderTransportCheckbox(option))}
                 </View>
                 {errors.transportOptions && <Text style={styles.errorText}>{errors.transportOptions}</Text>}
               </View>

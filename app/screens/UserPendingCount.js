@@ -54,20 +54,17 @@ const UserPendingCount = ({ profileStatus, addressCurrent, location, notificatio
     const toggleSwitch = async () => {
         if (!accessToken || !profile?.driver_id || !location) return;
         setLoading(true);
-
         const payLoad = {
             driverId: profile.driver_id,
             lat: location?.latitude,
             lon: location?.longitude,
             vehicleId: profileDetails?.vehicle_type,
         };
-
         try {
             const data = await fetchData('transport/pendingrequest', 'POST', payLoad, {
                 Authorization: `${accessToken}`,
                 driver_id: profile.driver_id,
             });
-
             if (!data?.ok && data?.status === 'false') {
                 await AsyncStorage.clear();
                 navigation.reset({
@@ -76,7 +73,6 @@ const UserPendingCount = ({ profileStatus, addressCurrent, location, notificatio
                 });
                 return;
             }
-
             const newCount = data?.pendingBookings?.length || 0;
 
             // Animate badge if count increased

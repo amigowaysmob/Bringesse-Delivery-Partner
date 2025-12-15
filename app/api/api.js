@@ -1,16 +1,12 @@
-// api.js
-// utils/api.js
-import { useNavigation } from '@react-navigation/native';
-import { Alert, Platform } from 'react-native';
-
 export const fetchData = async (endpoint, method = 'GET', body = null, headers = {}) => {
-  const baseUrl = 'https://bringesse.com:3001/driver/';
-  const url = `${baseUrl}${endpoint}`;
+  const DEV_BASE_URL = 'https://bringesse.in:4001/driver/';
+  const LIVE_BASE_URL = 'https://bringesse.com:3001/driver/';
+
+  const url = `${LIVE_BASE_URL}${endpoint}`;
   const defaultHeaders = {
     'Content-Type': 'application/json',
     ...headers,
   };
-  // console?.log(url,"url")
   const response = await fetch(url, {
     method,
     headers: defaultHeaders,

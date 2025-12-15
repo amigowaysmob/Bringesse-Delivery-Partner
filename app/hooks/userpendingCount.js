@@ -12,19 +12,15 @@ export default function usePendingCount(location, notificationData) {
     const profile = useSelector(state => state.Auth.profile);
     const profileDetails = useSelector(state => state.Auth.profileDetails);
     const accessToken = useSelector(state => state.Auth.accessToken);
-
     const fetchPendingCount = useCallback(async () => {
         if (!accessToken || !profile?.driver_id || !location) return;
-
         setLoading(true);
-
         const payLoad = {
             driverId: profile.driver_id,
             lat: location?.latitude,
             lon: location?.longitude,
             vehicleId: profileDetails?.vehicle_type,
         };
-
         try {
             const data = await fetchData(
                 'transport/pendingrequest',

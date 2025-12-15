@@ -1,29 +1,29 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect ,useRef} from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,AppState
+  Dimensions,
 } from 'react-native';
 import IonicIcon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
 import { hp, wp } from '../../resources/dimensions';
 import { COLORS } from '../../resources/colors';
 import { commonStyles } from '../../resources/styles';
-import usePendingCount from '../../hooks/userpendingCount';
-
 const { width } = Dimensions.get('window');
-
-// 🧩 Dynamic tab icon mapping
+/* 🧩 Dynamic tab icon mapping */
 const getTabIcon = (routeName, isFocused, colorScheme) => {
   const iconColor = isFocused
     ? COLORS[colorScheme].white
     : COLORS[colorScheme].tabInActive;
-
   switch (routeName) {
     case 'Home':
       return <IonicIcon name="home" color={iconColor} size={wp(6)} />;
@@ -36,7 +36,13 @@ const getTabIcon = (routeName, isFocused, colorScheme) => {
         />
       );
     case 'Notification':
-      return <IonicIcon name="notifications-outline" color={iconColor} size={wp(6)} />;
+      return (
+        <IonicIcon
+          name="notifications-outline"
+          color={iconColor}
+          size={wp(6)}
+        />
+      );
     case 'ExplorePackages':
       return <IonicIcon name="apps" color={iconColor} size={wp(6)} />;
     case 'T-Social':
@@ -50,48 +56,30 @@ const getTabIcon = (routeName, isFocused, colorScheme) => {
     case 'More':
       return <MaterialIcon name="person" color={iconColor} size={wp(6)} />;
     default:
-      return <IonicIcon name="home" color={iconColor} size={wp(5)} />;
+      return <IonicIcon name="home" color={iconColor} size={wp(6)} />;
   }
 };
 
 const BottomTabBar = ({ state, descriptors, navigation }) => {
-
   const { theme } = useTheme();
   const tabCount = state.routes.length;
   const TAB_WIDTH = width / tabCount;
-  // 🔄 Animate indicator (optional)
-  const translateX = useSharedValue(0);
-  useEffect(() => {
-    translateX.value = withTiming(state.index * TAB_WIDTH, { duration: 300 });
-  }, [state.index, TAB_WIDTH]);
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-    width: TAB_WIDTH,
-  }));
-  const appState = useRef(AppState.currentState);
-  // useEffect(() => {
-  //   const subscription = AppState.addEventListener('change', nextAppState => {
-  //     if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-  //       // App has come to foreground
-  //       navigation.navigate('Home'); // <- Navigate to Home tab
-  //     }
-  //     appState.current = nextAppState;
-  //   });
-  //   return () => {
-  //     subscription.remove();
-  //   };
-  // }, [navigation]);
+
+  /* 🔄 Press scale animations (one per tab) */
+  const scaleValues = useRef(
+    state.routes.map(() => useSharedValue(1))
+  ).current;
+
   return (
     <View
       style={[
         styles.tabContainer,
-        { backgroundColor: COLORS[theme].viewBackground },
+        { backgroundColor: COLORS[theme].background },
         commonStyles[theme].shadow,
       ]}
     >
       <View style={styles.tabs}>
         {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
           const isFocused = state.index === index;
 
           const onPress = () => {
@@ -100,33 +88,37 @@ const BottomTabBar = ({ state, descriptors, navigation }) => {
               target: route.key,
               canPreventDefault: true,
             });
+
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
           };
 
-          const onLongPress = () => {
-            navigation.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
-          };
+          const animatedIconStyle = useAnimatedStyle(() => ({
+            transform: [{ scale: scaleValues[index].value }],
+          }));
 
           return (
             <TouchableOpacity
-              key={index}
+              key={route.key}
+              activeOpacity={1}
+              onPressIn={() => {
+                scaleValues[index].value = withTiming(0.85, {
+                  duration: 120,
+                });
+              }}
+              onPressOut={() => {
+                scaleValues[index].value = withTiming(1, {
+                  duration: 180,
+                });
+              }}
               onPress={onPress}
-              onLongPress={onLongPress}
-              activeOpacity={0.8}
               style={[
                 styles.tabButton,
-                {
-                  width: TAB_WIDTH,
-                },
+                { width: TAB_WIDTH },
               ]}
             >
-              {/* Circle background for active tab */}
-              <View
+              <Animated.View
                 style={[
                   styles.iconCircle,
                   {
@@ -137,10 +129,11 @@ const BottomTabBar = ({ state, descriptors, navigation }) => {
                       ? COLORS[theme].accent
                       : COLORS[theme].tabInActive,
                   },
+                  animatedIconStyle,
                 ]}
               >
                 {getTabIcon(route.name, isFocused, theme)}
-              </View>
+              </Animated.View>
             </TouchableOpacity>
           );
         })}
@@ -149,14 +142,14 @@ const BottomTabBar = ({ state, descriptors, navigation }) => {
   );
 };
 
-// 🎨 Styles
+/* 🎨 Styles */
 const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     height: wp(16),
-    justifyContent: 'space-around',
     alignItems: 'center',
     borderTopWidth: wp(0.2),
+    borderColor: '#CCC',
     overflow: 'hidden',
   },
   tabs: {
@@ -174,7 +167,6 @@ const styles = StyleSheet.create({
     borderRadius: wp(5),
     alignItems: 'center',
     justifyContent: 'center',
-    // borderWidth: wp(0.3),
   },
 });
 

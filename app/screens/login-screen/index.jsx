@@ -28,8 +28,8 @@ const LoginScreen = () => {
     actions: { APP_REGISTER_LOGIN_API_CALL },
   } = useAuthHoc();
   // State
-  const [email, setEmail] = useState(__DEV__ ? 'divyatestingteam@gmail.com' : '');
-  const [password, setPassword] = useState(__DEV__ ? '123456' : '');
+  const [email, setEmail] = useState(__DEV__ ? 'shankarram54@gmail.com' : '');
+  const [password, setPassword] = useState(__DEV__ ? '123456789' : '');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -82,9 +82,9 @@ const LoginScreen = () => {
               await AsyncStorage.setItem('user_data', JSON.stringify(userDatas));
               await AsyncStorage.setItem('access_token', userDatas.access_token);
               await AsyncStorage.setItem('refresh_token', userDatas.refresh_token);
-              ALert
               // Redux update
               dispatch({ type: 'UPDATE_PROFILE', payload: userDatas });
+              dispatch({ type: 'PROFILE_DETAILS', payload: userDatas });
               dispatch({
                 type: 'SET_TOKENS',
                 payload: {
@@ -118,6 +118,7 @@ const LoginScreen = () => {
           setIsLoading(false); // Stop loader
         },
         errorCallback(errMsg) {
+          setIsLoading(false); // Stop loader
           console.error('Login Error:', errMsg);
           showMessage({
             message: t('Error'),

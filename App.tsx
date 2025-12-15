@@ -14,6 +14,8 @@ import {
   ActivityIndicator,
   ToastAndroid,
   Dimensions,
+  NativeEventEmitter,
+  NativeModules,
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { EventType } from '@notifee/react-native';
@@ -42,11 +44,10 @@ import { navigate } from './app/navigation/RootNavigation';
 import { fetchData } from './app/api/api';
 import FlashMessage, { showMessage } from 'react-native-flash-message';
 import { IMAGE_ASSETS } from './app/resources/images';
-
+import HyperSdkReact from 'hyper-sdk-react';
 const { width, height } = Dimensions.get('window');
 const wp = (p: number) => (width * p) / 100;
 const hp = (p: number) => (height * p) / 100;
-
 // Disable font scaling globally
 if (Text.defaultProps == null) Text.defaultProps = {};
 Text.defaultProps.allowFontScaling = false;
@@ -78,6 +79,58 @@ const darkTheme = {
 function App(): React.JSX.Element {
   const [network, setNetwork] = useState(true);
   const [notificationData, setNotificationData] = useState<any>(null);
+
+  useEffect(() => {
+    // block:start:create-hyper-services-instance
+
+    HyperSdkReact.createHyperServices();
+
+    // block:end:create-hyper-services-instance
+
+    // Creating initiate payload JSON object
+    // block:start:create-initiate-payload
+
+    const initiate_payload = {
+      requestId: 'test',
+      service: 'in.juspay.hyperpay',
+      payload: {
+        action: 'initiate',
+        merchantId: 'amigoways',
+        clientId: 'amigoways',
+        environment: 'production',
+      },
+    };
+
+    // block:end:create-initiate-payload
+
+    // Calling initiate on hyperService instance to boot up payment engine.
+    // block:start:initiate-sdk
+
+    HyperSdkReact.initiate(JSON.stringify(initiate_payload));
+
+    // block:end:initiate-sdk
+  }, []);
+
+  // block:start:event-handling-initiate
+  useEffect(() => {
+    const eventEmitter = new NativeEventEmitter(NativeModules.HyperSdkReact);
+    const eventListener = eventEmitter.addListener('HyperEvent', resp => {
+      const data = JSON.parse(resp);
+      const event = data.event || '';
+      switch (event) {
+        case 'initiate_result':
+          // logging the initiate result
+          console.log('Initiate result', data);
+          break;
+        default:
+          console.log(data);
+      }
+    });
+    return () => {
+      eventListener.remove();
+    };
+  }, []);
+
 
   // NETWORK CHECK
   useEffect(() => {

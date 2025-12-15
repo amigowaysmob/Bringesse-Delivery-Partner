@@ -144,7 +144,7 @@ const MoreScreen = () => {
   const { t } = useTranslation();
   const [availVersion] = useState('1.0.0'); // or fetch from config or constants
   // const profile = useSelector(state => state.Auth.profile);
-  const profile = useSelector(state => state.Auth.profileDetails);
+  const profile = useSelector(state => state.Auth.profile);
   const { location, locationLoading, refreshLocation } = useCurrentLocation();
   // Get pending count using the custom hook
   const { pendingCount, loading } = usePendingCount(location);
@@ -152,7 +152,6 @@ const MoreScreen = () => {
   const accessToken = useSelector(state => state.Auth.accessToken);
   const dispatch = useDispatch();
   const siteDetails = useSelector(state => state.Auth.siteDetails);
-
   const checkUpdate = async () => {
     const currentVersion = VersionCheck?.getCurrentVersion();
     // const latestVersion = await VersionCheck.getLatestVersion();
@@ -185,7 +184,6 @@ const MoreScreen = () => {
         console.log('profile', " JSON.stringify(data)");
         if (!accessToken || !profile?.driver_id) return;
         console.log('profile', '2');
-
         try {
           const data = await fetchData('profile/' + profile?.driver_id, 'GET', null, {
             Authorization: `${accessToken}`,
@@ -231,6 +229,7 @@ const MoreScreen = () => {
           </Text>
         </View>
         <Icon
+
           source={'menu-right'}
           size={wp(8)}
           style={{ margin: wp(10) }}
@@ -240,8 +239,11 @@ const MoreScreen = () => {
     </TouchableOpacity>
   );
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
+    <GestureHandlerRootView style={{ flex: 1,}} 
+    >
+      <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}
+    // pointerEvents={profile?.live_status ? 'auto' : 'none'}
+      >
         <UserProfileCard profile={profile} />
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -256,12 +258,16 @@ const MoreScreen = () => {
           <SectionItem icon="store" label={`Pending Order`} navigationPath='PendingOrdersHistory' navigation={navigation} />
           <SectionItem icon="face-man-profile" label="Personal Information" navigationPath='PersonalInfoScreen' navigation={navigation} />
           {
-            // profile?.partner_type.includes('Transport') &&
+            profile?.partner_type?.includes('Transport') &&
             <SectionItem icon="crown" navigation={navigation} label="subscription" navigationPath='SubscriptionList' />
           }
+          {/* <SectionItem icon="crown" navigation={navigation} label="HyperJusPay" navigationPath='HyperJusPay' /> */}
           <SectionItem icon="wallet" label="Wallet History" navigationPath='WalletHistory' navigation={navigation} />
           <SectionItem icon="shield-check" navigation={navigation} label="Terms and Conditions" navigationPath='TermsAndCondtions' />
+          <SectionItem icon="share-all" navigation={navigation} label="Quick Share" navigationPath='QuickShare' />
+          {/* <SectionItem icon="ticket" navigation={navigation} label="Refer Friend" navigationPath='ReferFriend' /> */}
           <SectionItem icon="currency-rupee" navigation={navigation} label="RevenueScreen" navigationPath='RevenueScreen' />
+          {/* <SectionItem icon="face-agent" navigation={navigation} label="Customer Support" navigationPath='CustomerSupport' /> */}
           <ThemeSection />
           {/* <LangSection /> */}
           <LogoutSection />

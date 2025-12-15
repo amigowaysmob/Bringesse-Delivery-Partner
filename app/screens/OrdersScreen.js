@@ -81,6 +81,7 @@ const OrdersScreen = () => {
       return '';
     }
   };
+  
   useFocusEffect(
     useCallback(() => {
       fetchOrders();
@@ -101,7 +102,7 @@ const OrdersScreen = () => {
         });
         return;
       }
-      
+
       if (!data?.orders?.length) {
         await AsyncStorage.removeItem('ACCEPTEDBOOKING');
       }
@@ -143,7 +144,6 @@ const OrdersScreen = () => {
     const order = item.orderId;
     const store = order?.storeId;
     // console?.log(order,"testOrder")
-
     return (
       <TouchableOpacity
         onPress={() => item.status == 'shipped' && navigation.navigate('BookingProductAction', {
@@ -159,8 +159,9 @@ const OrdersScreen = () => {
           />
         </View>
         <View style={styles.textContainer}>
+          {/* <Text>{JSON.stringify(order?.itemCount)}</Text> */}
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
+            <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
               {store?.name || 'Store'}
             </Text>
             <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].textPrimary }]}>
@@ -173,22 +174,25 @@ const OrdersScreen = () => {
           <Text style={[poppins.regular.h8, { marginTop: wp(1), color: COLORS[theme].textPrimary }]}>
             {item.status}
           </Text>
+          <Text style={[poppins.regular.h8, { marginTop: wp(1), color: COLORS[theme].textPrimary }]}>
+            {`Item Count: ${order?.itemCount || 0}`}
+          </Text>
           <Text style={[poppins.regular.h8, { marginTop: wp(1.5), color: COLORS[theme].textPrimary }]}>
             {formatDateTime(item.createdAt)}
           </Text>
           {
-            order.status !== "complete" &&
+            order?.status !== "complete" &&
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <Text style={[poppins.regular.h5, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
                 {`OTP : ${order?.otp}`}
               </Text>
               <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-                {`$${order.total?.toFixed(2) ?? '0.00'}`}
+                {` Rs${order?.total?.toFixed(2) ?? '0.00'} `}
               </Text>
             </View>
           }
           {
-            order.status !== "complete" &&
+            order?.status !== "complete" && item.status == 'shipped' &&
             <View style={{ width: wp(25), height: hp(3.6), alignItems: "center", backgroundColor: COLORS[theme].accent, padding: wp(2), borderRadius: wp(2), alignSelf: "flex-end" }}>
               <Text style={[poppins.semi_bold.h6, {
                 color: "#FFF", lineHeight: wp(3.5)

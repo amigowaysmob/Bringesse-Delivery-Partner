@@ -1,3 +1,12 @@
+/******************************************************************************************
+ *  UploadDocuments Screen
+ *  Updated with:
+ *   1. Driver Pic       (single)
+ *   2. Vehicle RC       (single)
+ *   3. Insurance        (single)
+ *   4. Driver Documents (multi – your existing)
+ ******************************************************************************************/
+
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
@@ -19,9 +28,8 @@ import axios from 'axios';
 import { showMessage } from 'react-native-flash-message';
 import { fetchData } from '../api/api';
 import DeviceInfo from 'react-native-device-info';
-// ⚡ Modal
 import ConfirmModal from '../components/header/ConfirmModal';
-const MAX_IMAGES = 5;
+const MAX_DOC_IMAGES = 5;
 const UploadDocuments = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -31,218 +39,229 @@ const UploadDocuments = () => {
   const profileDetails = useSelector(state => state.Auth.profileDetails);
   const siteDetails = useSelector(state => state.Auth.siteDetails);
 
-  const [images, setImages] = useState([]);
+  /** -------------------- STATES --------------------------- */
+
+  const [driverPic, setDriverPic] = useState(null);
+  const [vehicleRC, setVehicleRC] = useState(null);
+  const [insurance, setInsurance] = useState(null);
+
+  const [docImages, setDocImages] = useState([]); // Your existing multi images
   const [loading, setLoading] = useState(false);
 
-  // Modal State
+  // Delete modal
   const [modalVisible, setModalVisible] = useState(false);
-  const [deleteIndex, setDeleteIndex] = useState(null);
+  const [deleteInfo, setDeleteInfo] = useState({ type: null, index: null });
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // 🔥 Load Existing Images
+  /** ------------------------------------------------------------ */
+
   useEffect(() => {
-    if (profileDetails?.driver_documents && siteDetails?.media_url) {
-      const mappedImages = profileDetails.driver_documents.map(img => ({
-        uri: siteDetails.media_url + 'drivers/documents/' + img,
-        name: img,
-        uploaded: true,
-      }));
-      setImages(mappedImages);
+    if (profileDetails && siteDetails?.media_url) {
+      const base = siteDetails.media_url;
+      if (profileDetails.driver_pic) {
+        setDriverPic({
+          uri: base + 'drivers/driverpic/' + profileDetails.driver_pic,
+          name: profileDetails.driver_pic,
+          uploaded: true,
+        });
+      }
+      if (profileDetails.vehicle_rc) {
+        setVehicleRC({
+          uri: base + 'drivers/vehiclerc/' + profileDetails.vehicle_rc,
+          name: profileDetails.vehicle_rc,
+          uploaded: true,
+        });
+      }
+
+      if (profileDetails.insurance) {
+        setInsurance({
+          uri: base + 'drivers/insurance/' + profileDetails.insurance,
+          name: profileDetails.insurance,
+          uploaded: true,
+        });
+      }
+
+      if (profileDetails.driver_documents) {
+        const mapped = profileDetails.driver_documents.map(img => ({
+          uri: base + 'drivers/documents/' + img,
+          name: img,
+          uploaded: true,
+        }));
+        setDocImages(mapped);
+      }
     }
   }, [profileDetails, siteDetails]);
-
-  // 🔥 Toast
+  /** ------------------------------ HELPERS ---------------------------------- */
   const showToast = msg => {
-    if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.SHORT);
-    else Alert.alert(msg);
+    Platform.OS === 'android'
+      ? ToastAndroid.show(msg, ToastAndroid.SHORT)
+      : Alert.alert(msg);
   };
 
-  // 🔥 Permission
   const requestCameraPermission = async () => {
     const permission =
-      Platform.OS === 'ios'
-        ? PERMISSIONS.IOS.CAMERA
-        : PERMISSIONS.ANDROID.CAMERA;
+      Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;
 
     const result = await check(permission);
-
     switch (result) {
       case RESULTS.GRANTED:
         return true;
       case RESULTS.DENIED:
         return (await request(permission)) === RESULTS.GRANTED;
       case RESULTS.BLOCKED:
-        Alert.alert(
-          'Permission Blocked',
-          'Camera permission is blocked. Enable it in settings.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: openSettings },
-          ]
-        );
+        Alert.alert('Permission Blocked', 'Enable it in settings.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: openSettings },
+        ]);
         return false;
       default:
         return false;
     }
   };
 
-  // 🔥 Camera
-  const openCameraForDocs = async () => {
+  /** ------------------------------ IMAGE PICK HANDLERS -------------------------- */
+
+  const pickImage = async callback => {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
 
-    const result = await launchCamera({
-      mediaType: 'photo',
-      quality: 0.9,
-      saveToPhotos: false,
-    });
+    const result = await launchCamera({ mediaType: 'photo', quality: 0.9 });
 
-    if (result.didCancel || result.errorCode) return;
-
-    const asset = result.assets?.[0];
-    if (asset) addImage(asset);
+    if (!result.didCancel && !result.errorCode) {
+      const asset = result.assets?.[0];
+      callback({
+        uri: asset.uri,
+        name: asset.fileName || `img_${Date.now()}.jpg`,
+        type: asset.type || 'image/jpeg',
+        uploaded: false,
+      });
+    }
   };
 
-  // 🔥 Gallery
-  const openGallery = async () => {
+  const pickFromGallery = async callback => {
     const result = await launchImageLibrary({
       mediaType: 'photo',
-      selectionLimit: MAX_IMAGES - images.length,
       quality: 0.9,
     });
 
-    if (result.didCancel || result.errorCode) return;
-
-    result.assets?.forEach(img => addImage(img));
+    if (!result.didCancel && result.assets?.[0]) {
+      const asset = result.assets[0];
+      callback({
+        uri: asset.uri,
+        name: asset.fileName || `img_${Date.now()}.jpg`,
+        type: asset.type || 'image/jpeg',
+        uploaded: false,
+      });
+    }
   };
 
-  // 🔥 Add Image
-  const addImage = img => {
-    if (images.length >= MAX_IMAGES) {
-      showToast(`Maximum ${MAX_IMAGES} images allowed`);
+  /** ------------------------------ MULTI-IMAGE DOC HANDLERS ---------------------- */
+
+  const addDocImage = img => {
+    if (docImages.length >= MAX_DOC_IMAGES) {
+      showToast(`Maximum ${MAX_DOC_IMAGES} allowed`);
       return;
     }
-
-    setImages(prev => [
-      ...prev,
-      {
-        uri: img.uri,
-        name: img.fileName || `doc_${Date.now()}.jpg`,
-        type: img.type || 'image/jpeg',
-        uploaded: false,
-      },
-    ]);
+    setDocImages(prev => [...prev, img]);
   };
 
-  // 🔥 Remove Trigger (opens modal)
-  const confirmRemoveImage = index => {
-    setDeleteIndex(index);
+  /** ------------------------------ DELETE HANDLING ------------------------------ */
+
+  const confirmDelete = (type, index = null) => {
+    setDeleteInfo({ type, index });
     setModalVisible(true);
   };
 
-  // 🔥 Actually remove image (after modal confirm)
   const removeImage = async () => {
-    if (deleteIndex === null) return;
-
+    const { type, index } = deleteInfo;
     setDeleteLoading(true);
 
-    const deletedImage = images[deleteIndex];
+    if (type === 'driverPic') setDriverPic(null);
+    if (type === 'vehicleRC') setVehicleRC(null);
+    if (type === 'insurance') setInsurance(null);
 
-    // Remove from UI
-    const updatedImages = images.filter((_, i) => i !== deleteIndex);
-    setImages(updatedImages);
+    if (type === 'docs') {
+      const toDelete = docImages[index];
+      const updated = docImages.filter((_, i) => i !== index);
+      setDocImages(updated);
 
-    // If image wasn't uploaded, no API call needed
-    if (!deletedImage.uploaded) {
-      setDeleteLoading(false);
-      setModalVisible(false);
-      return;
+      if (toDelete.uploaded) {
+        const updatedServerDocs = profileDetails.driver_documents.filter(
+          d => d !== toDelete.name
+        );
+        await updateProfile({ driver_documents: updatedServerDocs });
+      }
     }
 
-    // Remove from server docs list
-    const updatedServerDocs =
-      (profileDetails?.driver_documents || []).filter(
-        doc => doc !== deletedImage.name
-      );
-
-    try {
-      await fnUpdateDocuments(updatedServerDocs);
-
-      showMessage({
-        message: 'Document removed successfully',
-        type: 'success',
-      });
-    } catch (err) {
-      console.error("Remove Error:", err);
-      showToast('Failed to remove document');
-    }
-
-    setDeleteLoading(false);
     setModalVisible(false);
+    setDeleteLoading(false);
   };
 
-  // 🔥 Upload Logic
-  const handleUpload = async () => {
-    const newImages = images.filter(img => !img.uploaded);
-    if (newImages.length === 0) {
-      showToast('No new images to upload');
-      return;
-    }
+  /** ------------------------------ UPLOAD -------------------------------- */
 
+  const uploadAll = async () => {
     setLoading(true);
 
-    const formData = new FormData();
-    newImages.forEach(img => {
-      formData.append('driver_document', {
-        uri: Platform.OS === 'android' ? img.uri : img.uri.replace('file://', ''),
-        type: img.type,
-        name: img.name,
-      });
-    });
+    const form = new FormData();
+
+    if (driverPic && !driverPic.uploaded)
+      form.append('driver_pic', driverPic);
+
+    if (vehicleRC && !vehicleRC.uploaded)
+      form.append('vehicle_rc', vehicleRC);
+
+    if (insurance && !insurance.uploaded)
+      form.append('insurance', insurance);
+
+    const newDocImages = docImages.filter(i => !i.uploaded);
+    newDocImages.forEach(img =>
+      form.append('driver_document', img)
+    );
 
     try {
       const res = await axios.post(
         'https://bringesse.com:3001/driver/fileupload',
-        formData,
+        form,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
             Authorization: accessToken,
-            driver_id: profileDetails?.driver_id,
+            driver_id: profileDetails.driver_id,
           },
         }
       );
 
       if (res.data?.status === 'true') {
-        const oldDocs = profileDetails?.driver_documents || [];
-        const newDocs = res.data.driver_documents || [];
-
-        const mergedDocs = [...oldDocs, ...newDocs];
-
-        await fnUpdateDocuments(mergedDocs);
-
-        // Update UI
-        setImages(prev =>
-          prev.map(img => ({ ...img, uploaded: true }))
-        );
+        // Update storing API
+        await updateProfile({
+          driver_pic: res.data?.driver_pic || profileDetails.driver_pic,
+          vehicle_rc: res.data?.vehicle_rc || profileDetails.vehicle_rc,
+          insurance: res.data?.insurance || profileDetails.insurance,
+          driver_documents: [
+            ...profileDetails.driver_documents,
+            ...(res.data.driver_documents || []),
+          ],
+        });
 
         showMessage({ message: 'Uploaded successfully!', type: 'success' });
       } else {
         showToast(res.data?.message || 'Upload failed');
       }
-    } catch (error) {
-      console.error('Upload Error:', error);
+    } catch (err) {
+      console.error(err);
       showToast('Upload failed');
     }
 
     setLoading(false);
   };
 
-  // 🔥 Update profile API
-  const fnUpdateDocuments = async docs => {
+  /** ------------------------------ UPDATE PROFILE API --------------------------- */
+
+  const updateProfile = async updateData => {
     const payload = {
       driver_id: profileDetails.driver_id,
-      driver_documents: JSON.stringify(docs),
+      ...updateData,
+      driver_documents: JSON.stringify(updateData.driver_documents),
     };
 
     const data = await fetchData('updateprofile', 'PATCH', payload, {
@@ -251,128 +270,81 @@ const UploadDocuments = () => {
       device_id: await DeviceInfo.getUniqueId(),
     });
 
-    if (data?.status === 'true') {
+    if (data?.status === 'true')
       dispatch({ type: 'UPDATE_PROFILE', payload: data });
-    }
-
-    return data;
   };
 
+  /** ------------------------------ UI SECTIONS --------------------------- */
+
+  const RenderBox = ({ title, image, onCamera, onGallery, deleteAction }) => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+
+      {image ? (
+        <View style={styles.imageWrapper}>
+          <Image source={{ uri: image.uri }} style={styles.singleImage} />
+          <TouchableOpacity
+            onPress={deleteAction}
+            style={styles.removeIcon}>
+            <Text style={{ color: '#fff' }}>×</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.row}>
+          <TouchableOpacity onPress={onCamera} style={styles.boxButton}>
+            <Text>Camera</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={onGallery} style={styles.boxButton}>
+            <Text>Gallery</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: COLORS[theme].background }]}>
-
-      <HeaderBar title={t('Upload Document')} showBackArrow />
-
-      {/* Buttons */}
-      <View style={{ flexDirection: 'row' }}>
-        <TouchableOpacity
-          onPress={openCameraForDocs}
-          style={[styles.button, { borderColor: COLORS[theme].buttonBg }]}
-        >
-          <Text style={[poppins.regular.h6, { color: COLORS[theme].buttonBg }]}>
-            OPEN CAMERA
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={openGallery}
-          style={[styles.button, { borderColor: COLORS[theme].buttonBg }]}
-        >
-          <Text style={[poppins.regular.h6, { color: COLORS[theme].buttonBg }]}>
-            OPEN GALLERY
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* All Images */}
-      <Text style={{ fontWeight: 'bold', marginVertical: hp(1) }}>All Images:</Text>
-      <View style={styles.imageContainer}>
-        {images.map((img, index) => (
-          <View key={index} style={styles.imageWrapper}>
-            <Image source={{ uri: img?.uri }} style={styles.previewImage} />
-            <TouchableOpacity
-              style={styles.removeIcon}
-              onPress={() => confirmRemoveImage(index)}
-            >
-              <Text style={{ color: '#fff', fontWeight: 'bold' }}>×</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-
-      {/* Upload Button */}
-      <TouchableOpacity
-        onPress={handleUpload}
-        style={[styles.uploadButton, { backgroundColor: COLORS[theme].buttonBg }]}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={COLORS[theme].background} />
-        ) : (
-          <Text style={[poppins.regular.h6, { color: COLORS[theme].buttonText }]}>
-            UPLOAD IMAGES
-          </Text>
-        )}
-      </TouchableOpacity>
-
-      {/* ❗ Delete Confirmation Modal */}
+    <ScrollView contentContainerStyle={{ padding: wp(4) }}>
       <ConfirmModal
         visible={modalVisible}
         title="Confirm Delete"
-        message="Are you sure you want to remove this document?"
+        message="Are you sure?"
+        loading={deleteLoading}
         onCancel={() => setModalVisible(false)}
         onConfirm={removeImage}
-        loading={deleteLoading}
       />
-
     </ScrollView>
   );
 };
 
-// Styles
+/** ------------------------------ STYLES ------------------------------ */
+
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, alignItems: 'center' },
-  button: {
-    padding: wp(2),
-    borderRadius: wp(1),
-    borderWidth: wp(0.4),
-    width: wp(40),
-    alignItems: 'center',
-    height: wp(12),
-    justifyContent: 'center',
-    marginHorizontal: wp(3),
+  section: { marginVertical: wp(4) },
+  sectionTitle: { fontWeight: 'bold', marginBottom: wp(2) },
+  row: { flexDirection: 'row' },
+  boxButton: {
+    borderWidth: 1, padding: wp(3), borderRadius: wp(2), marginRight: wp(3)
   },
-  imageContainer: {
+  imageWrapper: { position: 'relative', marginRight: wp(2) },
+  singleImage: { width: wp(40), height: wp(40), borderRadius: wp(2) },
+  previewImage: { width: wp(20), height: wp(20), borderRadius: wp(2) },
+  removeIcon: {
+    position: 'absolute', top: -10, right: -10,
+    backgroundColor: 'red', width: wp(6), height: wp(6),
+    borderRadius: wp(3), justifyContent: 'center', alignItems: 'center'
+  },
+  docContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginVertical: hp(1),
-  },
-  imageWrapper: {
-    position: 'relative',
-    margin: wp(1),
-  },
-  previewImage: {
-    width: wp(20),
-    height: wp(20),
-    borderRadius: wp(1),
-  },
-  removeIcon: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: 'red',
-    width: wp(5),
-    height: wp(5),
-    borderRadius: wp(2.5),
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginVertical: wp(3)
   },
   uploadButton: {
-    padding: wp(3),
-    borderRadius: wp(1),
-    width: wp(60),
+    padding: wp(4),
+    backgroundColor: 'green',
+    borderRadius: wp(2),
     alignItems: 'center',
-    marginVertical: hp(2),
+    marginVertical: wp(6),
   },
 });
 

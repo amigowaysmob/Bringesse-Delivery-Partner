@@ -18,7 +18,6 @@ import UerProfileCard from '../../UerProfileCard';
 import messaging from '@react-native-firebase/messaging';
 import { poppins } from '../../../resources/fonts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import polyline from '@mapbox/polyline';
 import UserawaitStatus from '../../UserawaitStatus';
 import DeviceInfo from 'react-native-device-info';
 import { fetchData } from '../../../api/api';
@@ -26,26 +25,23 @@ import VersionUpgradeModal from '../../VersionUpgradeModal';
 import CheckDocs from '../../CheckDocs';
 import UserPendingCount from '../../UserPendingCount';
 import UserDeliveryOrdersCount from '../../UserDeliveryOrdersCount copy';
+import WelcomeCard from '../../WelcomeCard';
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 const HomeScreen = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [location, setLocation] = useState(null);
   const [addressCurrent, setAddress] = useState('');
-  const [routeCoordinates, setRouteCoordinates] = useState([]);
   const mapRef = useRef(null);
   const profile = useSelector(state => state?.Auth?.profile);
   const profileDetails = useSelector(state => state.Auth.profileDetails);
   const [notificationData, setNotificationData] = useState(null);
-  const [distance, setDistance] = useState(null);
-  const [duration, setDuration] = useState(null);
   const [acceptedBooking, setAcceptedBooking] = useState(null);
   const [fetchProfile, setfetchProfile] = useState(false);
   const accessToken = useSelector(state => state.Auth?.accessToken);
   const dispatch = useDispatch();
   const siteDetails = useSelector(state => state.Auth?.siteDetails);
   const navigation = useNavigation();
-
   // Ask for location permission
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') return true;
@@ -64,7 +60,6 @@ const HomeScreen = () => {
       return false;
     }
   };
-
   // Get user’s current location
   const getLocation = async () => {
     const hasPermission = await requestLocationPermission();
@@ -92,7 +87,6 @@ const HomeScreen = () => {
       }
     );
   };
-
   // Get address from lat/lng using Google Geocoding API
   const getAddressFromCoordinates = async (lat, lng) => {
     try {
@@ -113,39 +107,6 @@ const HomeScreen = () => {
     }
   };
 
-  const fetchRouteDirections = async (startLoc, destLoc) => {
-    try {
-      const resp = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc.latitude},${startLoc.longitude}&destination=${destLoc.latitude},${destLoc.longitude}&key=${GOOGLE_MAPS_APIKEY}`
-      );
-      const respJson = await resp.json();
-      if (respJson.routes.length) {
-        const route = respJson.routes[0];
-        const points = polyline.decode(route.overview_polyline.points);
-        const coords = points.map(point => ({
-          latitude: point[0],
-          longitude: point[1],
-        }));
-        setRouteCoordinates(coords);
-
-        const leg = route.legs[0];
-        setDistance(leg.distance.text);
-        setDuration(leg.duration.text);
-
-        if (mapRef.current) {
-          mapRef.current.fitToCoordinates(coords, {
-            edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-            animated: true,
-          });
-        }
-      } else {
-        Alert.alert('No route found');
-      }
-    } catch (error) {
-      console.error('Directions error:', error);
-      Alert.alert('Error', 'Failed to get directions');
-    }
-  };
   const centerMapToLocation = () => {
     if (location && mapRef.current) {
       mapRef.current.animateToRegion(
@@ -162,7 +123,6 @@ const HomeScreen = () => {
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
-
       getLocation();
       AsyncStorage.getItem('NOTIFICATION_DATA').then(data => {
         if (data) {
@@ -204,39 +164,33 @@ const HomeScreen = () => {
     });
     return unsubscribe;
   }, []);
-  const clearNotification = async () => {
-    await AsyncStorage.removeItem('NOTIFICATION_DATA');
-    setNotificationData(null);
-  };
   const fetchProfileData = async () => {
-    if (!accessToken || !profileDetails?.driver_id) return;
-    console.log(JSON.stringify(profileDetails, null, 2))
+    if (!accessToken || !profile?.driver_id) return;
     try {
-      const data = await fetchData('profile/' + profileDetails?.driver_id, 'GET', null, {
+      const data = await fetchData('profile/' + profile?.driver_id, 'GET', null, {
         Authorization: `${accessToken}`,
-        driver_id: profileDetails.driver_id,
+        driver_id: profile.driver_id,
         device_id: await DeviceInfo.getUniqueId(),
       });
-      if (!data?.ok && data?.status == 'false') {
+      if (data?.status == 'false') {
         await AsyncStorage.clear();
         navigation.reset({
           index: 0,
           routes: [{ name: 'login-screen' }],
         });
       }
-      // Alert.alert('Profile Data Fetched', JSON.stringify(data));
+      else {
+        dispatch({ type: 'UPDATE_PROFILE', payload: data });
+        dispatch({ type: 'PROFILE_DETAILS', payload: data });
+      }
       console.log(data, 'Profile Data Fetched');
-      dispatch({
-        type: 'PROFILE_DETAILS',
-        payload: data,
-      });
     } catch (error) {
       console.error('profile API Error:', error);
     }
   };
-  
   return (
-    <View style={[styles.container, { backgroundColor: COLORS[theme].background }]}>
+    <View style={[styles.container, { backgroundColor: COLORS[theme].background ,
+    }]}>
       <UserPendingCount
         notificationData={notificationData}
         addressCurrent={addressCurrent}
@@ -266,8 +220,7 @@ const HomeScreen = () => {
         >
           <Marker coordinate={location}>
             <Image
-
-              source={{ uri: siteDetails?.media_url + 'vehicles/' + profileDetails?.vechile_image?.image }}
+              source={{ uri: siteDetails?.media_url + 'vehicles/' + profile?.vechile_image?.image }}
               style={{ width: wp(12), height: wp(12), borderRadius: wp(1), resizeMode: 'stretch', }}
             />
             <Text
@@ -277,7 +230,7 @@ const HomeScreen = () => {
                   backgroundColor: 'yellow',
                   color: '#000',
                   padding: wp(0.5),
-                  borderWidth: wp(0.3),
+                  borderWidth: wp(0.3),borderRadius:wp(1)
                 },
               ]}
             >
@@ -286,6 +239,7 @@ const HomeScreen = () => {
           </Marker>
         </MapView>
       )}
+
       {/* Center map button */}
       <TouchableOpacity
         onPress={centerMapToLocation}
@@ -293,9 +247,12 @@ const HomeScreen = () => {
       >
         <MaterialCommunityIcon name={'target'} size={wp(8)} color={COLORS[theme].white} />
       </TouchableOpacity>
-      {/* Bottom section */}
       <View style={{ position: 'absolute', bottom: hp(1), width: '100%' }}>
-        <UerProfileCard userstatus={profile?.live_status} />
+        <UerProfileCard userstatus={profileDetails?.live_status} />
+        {
+          profileDetails?.welcomeStatus == '0' &&
+          <WelcomeCard userstatus={profileDetails?.live_status} />
+        }
         <VersionUpgradeModal />
         <CheckDocs />
         <UserawaitStatus userstatus={profileDetails?.profile_status} />
@@ -366,5 +323,4 @@ const styles = StyleSheet.create({
     height: hp(100),
   },
 });
-
 export default HomeScreen;

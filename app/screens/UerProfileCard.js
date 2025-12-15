@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   View, Text, StyleSheet, Image, ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { COLORS } from '../resources/colors';
@@ -50,7 +51,7 @@ const UserProfileCard = ({ userstatus }) => {
         driver_id: profileDetails.driver_id,
         device_id: await DeviceInfo.getUniqueId(),
       });
-
+      // Alert.alert(JSON.stringify(data))
       if (!data?.ok && data?.status == 'false') {
         await AsyncStorage.clear();
         navigation.reset({
@@ -58,7 +59,6 @@ const UserProfileCard = ({ userstatus }) => {
           routes: [{ name: 'login-screen' }],
         });
       }
-
       dispatch({
         type: 'PROFILE_DETAILS',
         payload: data,
@@ -78,9 +78,10 @@ const UserProfileCard = ({ userstatus }) => {
         driver_id: profileDetails.driver_id,
         device_id: await DeviceInfo.getUniqueId(),
       });
-
       if (res?.ok && res?.data) {
         setRemainingCalls(res.data.remaining_count);
+      Alert.alert(JSON.stringify(res.data));
+
       } else {
         console.warn('Failed to fetch remaining calls');
       }
@@ -114,16 +115,26 @@ const UserProfileCard = ({ userstatus }) => {
               </Text>
             </View>
             <View>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: COLORS[theme].cardBackground, paddingHorizontal: wp(1), height: wp(6), borderRadius: wp(1) }}>
-                <Text style={[poppins.regular.h6, { color: COLORS[theme].primary, alignSelf: "center" }]}>
-                  {` ${profileDetails?.rating} `}
-                </Text>
-                <MaterialCommunityIcon
-                  name={'star'}
-                  size={wp(4.5)}
-                  color={COLORS[theme].textPrimary}
-                />
-              </View>
+              {profileDetails?.rating !== null && profileDetails?.rating !== undefined && (
+                <View style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  backgroundColor: COLORS[theme].cardBackground,
+                  paddingHorizontal: wp(1),
+                  height: wp(6),
+                  borderRadius: wp(1)
+                }}>
+                  <Text style={[poppins.regular.h6, { color: COLORS[theme].primary, alignSelf: "center" }]}>
+                    {profileDetails?.rating}
+                  </Text>
+                  <MaterialCommunityIcon
+                    name={'star'}
+                    size={wp(4.5)}
+                    color={COLORS[theme].textPrimary}
+                  />
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -148,7 +159,7 @@ const UserProfileCard = ({ userstatus }) => {
             {t('completed')}
           </Text>
         </View>
-        
+
         {/* Remaining Calls */}
         <View style={[styles.infoBox, { backgroundColor: COLORS[theme].accent }]}>
           {loadingRemaining ? (

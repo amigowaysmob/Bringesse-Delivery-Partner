@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { COLORS } from '../../resources/colors';
 import { wp, hp } from '../../resources/dimensions';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { poppins } from '../../resources/fonts';
 
 const SelectionModal = ({
   visible,
@@ -90,7 +91,7 @@ const SelectionModal = ({
             style={{ marginRight: wp(3) }}
           />
         )}
-        <Text style={[styles.itemText, { color: COLORS[theme].textPrimary }]}>
+        <Text style={[poppins.semi_bold.h6, styles.itemText, { color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
           {item.label}
         </Text>
       </TouchableOpacity>

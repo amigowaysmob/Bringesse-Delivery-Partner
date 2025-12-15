@@ -20,18 +20,19 @@ import { fetchData } from '../api/api';
 import DeviceInfo from 'react-native-device-info';
 import ConfirmModal from '../components/header/ConfirmModal';
 import { poppins } from '../resources/fonts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const UploadDriverDocs = ({ route }) => {
+const uploadRegisterDocs = ({ route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const accessToken = useSelector(state => state.Auth.accessToken);
-  const profileDetails = useSelector(state => state.Auth.profileDetails);
   const siteDetails = useSelector(state => state.Auth.siteDetails);
-  const { showBackArrow } = route.params;
+  const { showBackArrow, userDatas } = route.params;
+  // const userDatas = userDatas ? userDatas : null
   useFocusEffect(
     React.useCallback(() => {
+
       if (showBackArrow) return;
       const onBackPress = () => {
         showToast("Back button disabled on this screen");
@@ -41,6 +42,7 @@ const UploadDriverDocs = ({ route }) => {
         "hardwareBackPress",
         onBackPress
       );
+
       return () => subscription.remove();
     }, [showBackArrow])
   );
@@ -56,34 +58,8 @@ const UploadDriverDocs = ({ route }) => {
   const [deleteKey, setDeleteKey] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   useEffect(() => {
-    // Alert.alert()
-    if (!profileDetails || !siteDetails?.media_url) return;
-    const updated = { ...docs };
-    const baseURL = siteDetails.media_url + "drivers/documents/";
-
-    const singleFiles = [
-      "aadhar_front", "aadhar_back",
-      "license_front", "license_back",
-      "pan_front", "pan_back",
-      "driver_image", "vehicle_rc", "insurance"
-    ];
-    singleFiles.forEach(key => {
-      if (profileDetails[key]) {
-        updated[key] = { uri: baseURL + profileDetails[key], name: profileDetails[key], uploaded: true };
-      }
-    });
-    if (Array.isArray(profileDetails.driver_documents)) {
-      updated.driver_documents = profileDetails.driver_documents.map(name => ({
-        uri: baseURL + name,
-        name,
-        uploaded: true
-      }));
-    }
-
-    setDocs(updated);
-  }, [profileDetails, siteDetails]);
-
-
+    if (!siteDetails?.media_url) return;
+  }, [siteDetails]);
   const showToast = (msg) => {
     if (Platform.OS === "android") ToastAndroid.show(msg, ToastAndroid.SHORT);
     else Alert.alert(msg);
@@ -161,8 +137,8 @@ const UploadDriverDocs = ({ route }) => {
 
       if (lastDoc.uploaded) {
         const updatedPayload = {
-          ...profileDetails,
-          driver_documents: profileDetails.driver_documents.filter(d => d !== lastDoc.name)
+          ...userDatas,
+          driver_documents: userDatas.driver_documents.filter(d => d !== lastDoc.name)
         };
         try { await fnUpdateDocuments(updatedPayload); showMessage({ message: "Document removed", type: "success" }); }
         catch { showToast("Failed to remove"); }
@@ -171,7 +147,7 @@ const UploadDriverDocs = ({ route }) => {
       const doc = docs[deleteKey];
       setDocs(prev => ({ ...prev, [deleteKey]: null }));
       if (doc?.uploaded) {
-        const updatedPayload = { ...profileDetails, [deleteKey]: '' };
+        const updatedPayload = { ...userDatas, [deleteKey]: '' };
         try { await fnUpdateDocuments(updatedPayload); showMessage({ message: "Document removed", type: "success" }); }
         catch { showToast("Failed to remove"); }
       }
@@ -206,7 +182,7 @@ const UploadDriverDocs = ({ route }) => {
       const res = await axios.post(
         'https://bringesse.com:3001/driver/fileupload',
         formData,
-        { headers: { Authorization: accessToken, driver_id: profileDetails?.driver_id } }
+        { headers: {driver_id: userDatas?.driver_id } }
       );
       console.log(res, 'Upload Response');
       if (res.data?.status === 'true') {
@@ -231,27 +207,31 @@ const UploadDriverDocs = ({ route }) => {
 
   const fnUpdateDocuments = async (responseData) => {
     const payload = {
-      driver_id: profileDetails.driver_id,
-      aadhar_front: responseData.aadhar_front || profileDetails.aadhar_front || '',
-      aadhar_back: responseData.aadhar_back || profileDetails.aadhar_back || '',
-      license_front: responseData.license_front || profileDetails.license_front || '',
-      license_back: responseData.license_back || profileDetails.license_back || '',
-      pan_front: responseData.pan_front || profileDetails.pan_front || '',
-      pan_back: responseData.pan_back || profileDetails.pan_back || '',
-      driver_image: responseData.driver_image || profileDetails.driver_image || '',
-      vehicle_rc: responseData.vehicle_rc || profileDetails.vehicle_rc || '',
-      insurance: responseData.insurance || profileDetails.insurance || '',
+      driver_id: userDatas.driver_id,
+      aadhar_front: responseData.aadhar_front || userDatas.aadhar_front || '',
+      aadhar_back: responseData.aadhar_back || userDatas.aadhar_back || '',
+      license_front: responseData.license_front || userDatas.license_front || '',
+      license_back: responseData.license_back || userDatas.license_back || '',
+      pan_front: responseData.pan_front || userDatas.pan_front || '',
+      pan_back: responseData.pan_back || userDatas.pan_back || '',
+      driver_image: responseData.driver_image || userDatas.driver_image || '',
+      vehicle_rc: responseData.vehicle_rc || userDatas.vehicle_rc || '',
+      insurance: responseData.insurance || userDatas.insurance || '',
     };
     const data = await fetchData('updateprofile', 'PATCH', payload, {
-      Authorization: accessToken,
-      driver_id: profileDetails?.driver_id,
+      driver_id: userDatas?.driver_id,
       device_id: await DeviceInfo.getUniqueId(),
     });
     console.log("Update Profile Response", data);
     if (data?.status === 'true') {
-      dispatch({ type: 'UPDATE_PROFILE', payload: data });
       showMessage({ message: 'Profile updated successfully!', type: 'success' });
-      navigation?.goBack();
+      await AsyncStorage.clear();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'login-screen' }],
+      });
+
+
     } else console.log("Update Error", data);
 
     return data;
@@ -259,7 +239,7 @@ const UploadDriverDocs = ({ route }) => {
 
   const renderDocBlock = (label, keyFront, keyBack, required = false) => (
     <View style={[styles.block, { backgroundColor: COLORS[theme].cardBackground }]}>
-      <Text style={[poppins.semi_bold.h6, styles.blockTitle, { color: COLORS[theme].text }]}>{label} {required && <Text style={{ color: 'red' }}>*</Text>}</Text>
+      <Text style={[poppins.semi_bold.h6, styles.blockTitle, { color: COLORS[theme].textPrimary }]}>{label} {required && <Text style={{ color: 'red' }}>*</Text>}</Text>
       {keyFront && renderImageBox(keyFront, "Front")}
       {keyBack && renderImageBox(keyBack, "Back")}
     </View>
@@ -267,7 +247,7 @@ const UploadDriverDocs = ({ route }) => {
 
   const renderSingleDoc = (label, key, required = false) => (
     <View style={[styles.block, { backgroundColor: COLORS[theme].cardBackground }]}>
-      <Text style={[poppins.semi_bold.h6, styles.blockTitle, { color: COLORS[theme].text }]}>{label} {required && <Text style={{ color: 'red' }}>*</Text>}</Text>
+      <Text style={[poppins.semi_bold.h6, styles.blockTitle, { color: COLORS[theme].textPrimary }]}>{label} {required && <Text style={{ color: 'red' }}>*</Text>}</Text>
       {renderImageBox(key)}
     </View>
   );
@@ -309,8 +289,8 @@ const UploadDriverDocs = ({ route }) => {
     );
   };
   return (
-    <>
-      <HeaderBar title="Upload Documents" showBackArrow={showBackArrow} />
+    <View style={{flex:1,backgroundColor:COLORS[theme].background}}>
+      <HeaderBar title={"Upload Documents"} showBackArrow={showBackArrow} />
       <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.container]}>
           {renderDocBlock("Aadhaar Card", "aadhar_front", "aadhar_back", true)}
@@ -327,14 +307,14 @@ const UploadDriverDocs = ({ route }) => {
         </View>
         <ConfirmModal
           visible={modalVisible}
-          onCancel={closeDelete}sin
+          onCancel={closeDelete}
           onConfirm={removeImage}
           loading={deleteLoading}
           title="Delete Document"
           message="Are you sure you want to delete this document?"
         />
       </View>
-    </>
+    </View>
   );
 };
 const styles = StyleSheet.create({
@@ -353,4 +333,4 @@ const styles = StyleSheet.create({
   uploadBtnText: { fontSize: wp(4.5), fontWeight: "700", textAlign: "center" },
   fixedButtonWrapper: { position: "absolute", bottom: hp(2), width: "100%" },
 });
-export default UploadDriverDocs;
+export default uploadRegisterDocs;

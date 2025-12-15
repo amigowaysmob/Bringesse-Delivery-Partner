@@ -25,7 +25,6 @@ import { PlayInstallReferrer } from 'react-native-play-install-referrer';
 import DeviceInfo from 'react-native-device-info';
 import messaging from '@react-native-firebase/messaging';
 import { useAuthHoc } from '../../../config/config';
-import { getUserData } from '../../../utils/utils';
 
 const RegisterScreen = () => {
     const { theme } = useTheme();
@@ -34,6 +33,7 @@ const RegisterScreen = () => {
     const siteDetails = useSelector(state => state.Auth.siteDetails);
     const [location, setLocation] = useState(null);
     const [verifyModalVisible, setVerifyModalVisible] = useState(false);
+    const [verifiedPhone, setVerifiedPhone] = useState('');
     // Focus effect will run every time screen is focused
     function parseQueryString(qs) {
         const params = {};
@@ -62,22 +62,6 @@ const RegisterScreen = () => {
         });
     }
     const [storeId, setStoreId] = useState(null);
-    useEffect(() => {
-        const checkLocalData = async () => {
-            const userData = await getUserData();
-            const parsedData = JSON.parse(userData);
-            console.log(parsedData, "User Data on Register Screen");
-        }
-        checkLocalData();
-    }, []);
-
-    const {
-        actions: {
-            APP_SITE_SETTING_API_CALL,
-        },
-    } = useAuthHoc();
-
-
     useFocusEffect(
         useCallback(() => {
             getLocation();
@@ -159,7 +143,7 @@ const RegisterScreen = () => {
     );
     const {
         actions: { APP_REGISTER_LOGIN_API_CALL },
-    } = useAuthHoc();
+      } = useAuthHoc();
     // Function to toggle terms acceptance
     const toggleAcceptedTerms = () => {
         setFormValues(prev => ({ ...prev, acceptedTerms: !prev.acceptedTerms }));
@@ -168,18 +152,18 @@ const RegisterScreen = () => {
     const [deviceId, setDeviceId] = useState(null);
     useEffect(() => {
         const init = async () => {
-            try {
-                const token = await messaging().getToken();
-                const id = await DeviceInfo.getUniqueId();
-                console.log(token, "Fcm Token");
-                setFcmToken(token);
-                setDeviceId(id);
-            } catch (error) {
-                console.log('Error fetching device info:', error);
-            }
+          try {
+            const token = await messaging().getToken();
+            const id = await DeviceInfo.getUniqueId();
+            console.log(token, "Fcm Token");
+            setFcmToken(token);
+            setDeviceId(id);
+          } catch (error) {
+            console.log('Error fetching device info:', error);
+          }
         };
         init();
-    }, []);
+      }, []);
 
     const [errors, setErrors] = useState({});
     const [modalVisible, setModalVisible] = useState(false);
@@ -190,70 +174,42 @@ const RegisterScreen = () => {
     const [vehicleCategories, setVehicleCategories] = useState([]);
     const [serviceTypes, setServiceTypes] = useState([]);
     const dispatch = useDispatch();
-    const [transparentOption, settransparentOption] = useState([]);
-
 
     useEffect(() => {
-        const fetchAndProcessSiteDetails = async () => {
-            let details = siteDetails;
-            // If siteDetails is empty, fetch it
-            if (!details || Object.keys(details).length === 0) {
-                try {
-                    const response = await new Promise((resolve, reject) => {
-                        APP_SITE_SETTING_API_CALL({
-                            request: {},
-                            callback: {
-                                successCallback: resolve,
-                                errorCallback: reject,
-                            },
-                        });
-                    });
-                    details = response?.data?.data || {};
-                    dispatch({ type: 'SET_SITE_DETAILS', payload: details });
-                } catch (err) {
-                    console.log('Site Setting API error:', err);
-                    return; // exit early if API fails
-                }
-            }
-            if (!details) return;
-            // 1. Vehicle Categories
-            const categories = details.vehicle_category?.map(category => ({
+        setVehicleCategories(
+            siteDetails?.vehicle_category?.map(category => ({
                 label: category.name,
                 value: category._id,
-                vehicles: category.vehicles || [],
-                mode: category.mode || [],
-            })) || [];
-            //   Alert.alert("Site details", JSON.stringify(categories,null,2));
-            setVehicleCategories(categories);
-            // 2. Service Types
-            const allServices = details.service_type || [];
-            const { transportOptions, serviceType } = formValues;
+                vehicles: category?.vehicles,
+            })) || []
+        );
+        const allServices = siteDetails?.service_type || [];
+        if (!formValues.transportOptions.length) {
+            setServiceTypes([]);
+            setFormValues(prev => ({ ...prev, serviceType: [] })); // clear selected service types
+            return;
+        }
+        let filteredServices = allServices;
+        if (formValues.transportOptions.length === 1) {
+            if (formValues.transportOptions.includes('Transport')) {
+                filteredServices = allServices.filter(s => s.type === 'transport');
+            } else if (formValues.transportOptions.includes('Delivery')) {
+                filteredServices = allServices.filter(s => s.type === 'shop');
+            }
+        }
+        const mappedServices = filteredServices.map(service => ({
+            label: service.name,
+            value: service._id,
+        }));
 
-            if (!transportOptions.length) {
-                setServiceTypes([]);
-                setFormValues(prev => ({ ...prev, serviceType: [] }));
-                return;
-            }
-            let filteredServices = allServices;
-            if (transportOptions.length === 1) {
-                filteredServices = allServices.filter(s =>
-                    transportOptions.includes('Transport') ? s.type === 'transport' : s.type === 'shop'
-                );
-            }
-            const mappedServices = filteredServices.map(service => ({
-                label: service.name,
-                value: service._id,
-            }));
-            setServiceTypes(mappedServices);
-            // Keep only valid selected service types
-            const validServiceTypeValues = new Set(mappedServices.map(s => s.value));
-            const updatedSelected = serviceType.filter(val => validServiceTypeValues.has(val));
-
-            if (updatedSelected.length !== serviceType.length) {
-                setFormValues(prev => ({ ...prev, serviceType: updatedSelected }));
-            }
-        };
-        fetchAndProcessSiteDetails();
+        setServiceTypes(mappedServices);
+        const validServiceTypeValues = mappedServices.map(s => s.value);
+        const updatedSelected = formValues.serviceType.filter(val =>
+            validServiceTypeValues.includes(val)
+        );
+        if (updatedSelected.length !== formValues.serviceType.length) {
+            setFormValues(prev => ({ ...prev, serviceType: updatedSelected }));
+        }
     }, [siteDetails, formValues.transportOptions]);
 
     const handleChange = (field, value) => {
@@ -323,21 +279,23 @@ const RegisterScreen = () => {
                 if (data?.status === "true") {
                     const userDatas = data;
                     console.log('User registered', userDatas);
+                    // Save user data and tokens in AsyncStorage
                     try {
                         await AsyncStorage.setItem('user_data', JSON.stringify(userDatas));
-                        // await AsyncStorage.setItem('access_token', userDatas.access_token);
-                        // await AsyncStorage.setItem('refresh_token', userDatas.refresh_token);
+                        await AsyncStorage.setItem('access_token', userDatas.access_token);
+                        await AsyncStorage.setItem('refresh_token', userDatas.refresh_token);
                         console.log('User data saved');
                     } catch (error) {
                         console.error('AsyncStorage error:', error);
                     }
-                    navigation.navigate('uploadRegisterDocs', { showBackArrow: false, userDatas: userDatas });
+                    // Show success
+                    ToastAndroid.show(userDatas?.message, ToastAndroid.SHORT);
                     showMessage({
                         message: userDatas?.message,
                         description: userDatas?.message,
                         type: 'success',
                     });
-                    // await autoLogin(formValues?.email, formValues.password);
+                    await autoLogin(formValues?.email, formValues.password);
                 } else {
                     ToastAndroid.show(data?.message, ToastAndroid.SHORT);
                     showMessage({
@@ -350,6 +308,162 @@ const RegisterScreen = () => {
             }
         }
     };
+    const autoLogin = async (email, password) => {
+        APP_REGISTER_LOGIN_API_CALL({
+          request: {
+            payload: {
+              email,
+              password,
+              device_token: fcmToken,
+              device_type: Platform.OS === 'ios' ? 0 : 1,
+              device_id: deviceId,
+              type: 'email',
+            },
+          },
+          callback: {
+            async successCallback({ message, data }) {
+              const userDatas = data?.data;
+              if (userDatas?.status == 'true') {
+                try {
+                  await AsyncStorage.setItem('user_data', JSON.stringify(userDatas));
+                  await AsyncStorage.setItem('access_token', userDatas.access_token);
+                  await AsyncStorage.setItem('refresh_token', userDatas.refresh_token);
+                  // Redux update
+                  dispatch({ type: 'UPDATE_PROFILE', payload: userDatas });
+                  dispatch({
+                    type: 'SET_TOKENS',
+                    payload: {
+                      access_token: userDatas.access_token,
+                      refresh_token: userDatas.refresh_token,
+                    },
+                  });
+      
+                  // Show success message
+                  showMessage({
+                    message: userDatas?.message,
+                    description: userDatas?.message,
+                    type: 'success',
+                  });
+      
+                  // Navigate to home screen
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'home-screen' }],
+                  });
+                } catch (error) {
+                  console.error('AsyncStorage error:', error);
+                }
+              } else {
+                showMessage({
+                  message: t('Login Failed'),
+                  description: userDatas?.message || t('Something went wrong'),
+                  type: 'danger',
+                });
+              }
+            },
+            errorCallback(errMsg) {
+              console.error('Login Error:', errMsg);
+              showMessage({
+                message: t('Error'),
+                description: errMsg || t('An unexpected error occurred.'),
+                type: 'danger',
+              });
+            },
+          },
+        });
+      };
+      
+    
+    // const handleSubmit = async () => {
+    //     // Alert.alert(JSON.stringify(formValues?.serviceType))
+    //     if (validateFields()) {
+    //         let payLoad = {
+    //             first_name: formValues?.firstName.trim(),
+    //             "last_name": formValues?.lastName || "",                     // assuming optional
+    //             "email": formValues?.email,
+    //             "password": formValues?.password,
+    //             "phone_no": formValues?.mobileNumber,
+    //             "location": formValues?.location,
+    //             "lon": location?.longitude,                                                   // not collected, maybe from GPS
+    //             "lat": location?.latitude,                                                // not collected, maybe from GPS
+    //             "service_type": formValues?.serviceType.length ? formValues?.serviceType.length : [],          // assuming only first is needed
+    //             "vehicle_type": formValues?.vehicleType,
+    //             "partner_type": formValues?.transportOptions || "",
+    //             "vehicle_category": formValues?.vehicleCategory,
+    //             "vehicle_number": formValues?.vehicle_no,
+    //             "capacity": `${formValues?.weight}` || "",
+    //             'storeId': storeId ? storeId : null
+    //             // "referral_code": formValues?.referal_code                    // mapped from 
+    //         }
+    //         try {
+    //             const data = await fetchData('signup/', 'POST', payLoad, {
+    //             });
+    //             // Alert.alert(JSON.stringify(data))
+    //             console.log('User data saved', data);
+    //             const userDatas = data;
+    //             if (data?.status == "true") {
+    //                 const userDatas = data;
+    //                 console.log('User data saved', userDatas);
+    //                 try {
+    //                     await AsyncStorage.setItem('user_data', JSON.stringify(userDatas));
+    //                     console.log('User data saved');
+    //                 } catch (error) {
+    //                     console.error('AsyncStorage error:', error);
+    //                 }
+    //                 // Show success
+    //                 ToastAndroid.show(userDatas?.message, ToastAndroid.SHORT);
+    //                 showMessage({
+    //                     message: userDatas?.message,
+    //                     description: userDatas?.message,
+    //                     type: 'success',
+    //                 });
+    //                 const { access_token, refresh_token, ...profileData } = userDatas;
+    //                 await AsyncStorage.setItem('access_token', access_token);
+    //                 await AsyncStorage.setItem('refresh_token', refresh_token);
+    //                 // Redux update
+    //                 dispatch({
+    //                     type: 'UPDATE_PROFILE',
+    //                     payload: profileData,
+    //                 });
+    //                 // Store access and refresh tokens
+    //                 dispatch({
+    //                     type: 'SET_TOKENS',
+    //                     payload: {
+    //                         access_token: access_token,
+    //                         refresh_token: refresh_token,
+    //                     },
+    //                 });
+    //                 // Navigate
+    //                 setTimeout(() => {
+    //                     // navigation.replace('home-screen');
+    //                     navigation.reset({
+    //                         index: 0,
+    //                         routes: [{ name: 'login-screen' }],
+    //                     });
+    //                 }, 2000);
+    //             } else {
+    //                 ToastAndroid.show(userDatas?.message, ToastAndroid.SHORT);
+    //                 showMessage({
+    //                     message: userDatas.message,
+    //                     // description: userDatas.message || t('Something went wrong'),
+    //                     type: 'danger',
+    //                 });
+    //             }
+    //         } catch (error) {
+    //             console.error('profile API Error:', error);
+    //         } finally {
+    //             // setLoading(false);
+    //         }
+    //     }
+    // };
+    // useEffect(()=>{
+    //     // Alert.alert("rter")
+    //     showMessage({
+    //         message: "userDatas?.message",
+    //         description: "userDatas?.message",
+    //         type: 'success',
+    //     });
+    // },[])
     function handleNavigate() {
         navigation?.navigate('TermsAndCondtions')
     }
@@ -404,14 +518,10 @@ const RegisterScreen = () => {
         setModalVisible(false);
     };
     const fetchVehicleType = async (item) => {
-        // Alert.alert("Vehicle Category Selected", JSON.stringify(item?.mode,null,2));
-        settransparentOption(item?.mode || []);
         setVehicleTypes(
             item?.vehicles?.map(service => ({
                 label: service.name,
                 value: service._id,
-         
-                
             })) || []
         );
     };
@@ -451,9 +561,7 @@ const RegisterScreen = () => {
                 ]}>
                     <Text numberOfLines={1} style={[
                         styles.dropdownText,
-                        { color: value ? COLORS[theme].textPrimary : COLORS[theme].textPrimary, maxWidth: wp(65),
-                             textTransform: "capitalize"
-                         },
+                        { color: value ? COLORS[theme].textPrimary : COLORS[theme].placeholder, maxWidth: wp(65) },
                     ]}>
                         {value || `Select ${label}`}
                     </Text>
@@ -518,6 +626,7 @@ const RegisterScreen = () => {
                         right={<TextInput.Icon icon="chevron-right" color={COLORS[theme].textPrimary} />}
                     />
                 </TouchableOpacity>
+
                 {renderTextField('Password', formValues.password, text => handleChange('password', text), errors.password, true, true)}
                 {renderTextField('Confirm Password', formValues.confirmPassword, text => handleChange('confirmPassword', text), errors.confirmPassword, true)}
                 {renderDropdownField(
@@ -535,13 +644,13 @@ const RegisterScreen = () => {
                 {renderTextField('Weight', formValues.weight, text => handleChange('weight', text), errors.weight, false, false, true)}
                 {renderTextField('Vehicle Number', formValues.vehicle_no, text => handleChange('vehicle_no', text), errors.vehicle_no)}
                 <View style={{ marginBottom: hp(2), }}>
-                    {/* <Text>{JSON.stringify(vehicleTypes)}</Text> */}
                     {renderLabel('Select Transport Option', true)}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingRight: wp(10) }}>
-                        {transparentOption.map(option => renderTransportCheckbox(option))}
+                        {['Transport', 'Delivery'].map(option => renderTransportCheckbox(option))}
                     </View>
                     {errors.transportOptions && <Text style={styles.errorText}>{errors.transportOptions}</Text>}
                 </View>
+
                 {formValues.transportOptions.includes('Delivery') &&
                     renderDropdownField(
                         'Service Type',

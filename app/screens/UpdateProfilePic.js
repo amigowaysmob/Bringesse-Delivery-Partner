@@ -18,6 +18,7 @@ import {
 } from 'react-native-permissions';
 import { showMessage } from 'react-native-flash-message';
 import { fetchData } from '../api/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UpdateProfilePic = () => {
   const { theme } = useTheme();
@@ -67,7 +68,6 @@ const UpdateProfilePic = () => {
       return false;
     }
   };
-
   const handleOpenCamera = async () => {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
@@ -80,26 +80,19 @@ const UpdateProfilePic = () => {
         // allowsEditing: true,
         saveToPhotos: false,
         allowsEditing: true, // iOS cropping UI
-
       });
-
       if (result?.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         const uri = asset.uri;
         const fileName = asset.fileName || 'profile.jpg';
         const type = asset.type || 'image/jpeg';
-
         setImageUri(uri);
-
         if (!accessToken || !profileDetails?.driver_id) {
           ToastAndroid.show('Authorization error.', ToastAndroid.SHORT);
-
           showMessage({ message: 'Authorization error.', type: 'danger' });
           return;
         }
-
         setLoading(true); // Start loading
-
         const formData = new FormData();
         formData.append("driver_image", {
           uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
@@ -119,8 +112,7 @@ const UpdateProfilePic = () => {
 
         const response = await fetch("https://bringesse.com:3001/driver/fileupload", requestOptions);
         const resultText = await response.text();
-        console.log(resultText);
-
+        // console.log(resultText);
         try {
           const resultJson = JSON.parse(resultText);
           if (resultJson?.status === 'true') {
@@ -145,12 +137,10 @@ const UpdateProfilePic = () => {
       console.error('Camera launch failed', err);
       // Alert.alert('Error', 'Failed to update profile picture.');
       ToastAndroid.show('Failed to update profile picture.', ToastAndroid.SHORT);
-
     } finally {
       setLoading(false); // End loading in any case
     }
   };
-
   const fnUpdateProfilePic = async (dImage) => {
     const payLoad = {
       driver_id: profileDetails?.driver_id,
@@ -161,7 +151,17 @@ const UpdateProfilePic = () => {
         Authorization: `${accessToken}`,
         driver_id: profileDetails?.driver_id,
       });
-
+      console.log(data?.error, "updateprofile")
+      if (data?.error && data?.error == 'Unauthorized Access API') {
+        await AsyncStorage.clear();
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'login-screen' }],
+        });
+        ToastAndroid.show('Failed to update profile.', ToastAndroid.SHORT);
+        return
+      }
+      // Unauthorized Access API
       if (data?.status === 'true') {
         ToastAndroid.show(data?.message, ToastAndroid.SHORT);
         showMessage({ message: data?.message, type: 'success' });
@@ -169,6 +169,7 @@ const UpdateProfilePic = () => {
           type: 'UPDATE_PROFILE',
           payload: data,
         });
+        dispatch({ type: 'PROFILE_DETAILS', payload: data });
         setTimeout(() => {
           navigation?.goBack();
         }, 2000);
@@ -207,7 +208,6 @@ const UpdateProfilePic = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -59,7 +59,7 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                 driver_id: profile.driver_id,
                 device_id: deviceId,
             });
-            dispatch({ type: 'UPDATE_PROFILE', payload: data });
+            // dispatch({ type: 'PROFILE_DETAILS', payload: data });
         } catch (error) {
             console.error('Error sending location:', error);
         }
@@ -70,7 +70,6 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
     // ---------------------------------------------
     const fetchProfileData = async () => {
         if (!accessToken || !profile?.driver_id) return;
-
         try {
             setLoading(true);
             const data = await fetchData('profile/' + profile?.driver_id, 'GET', null, {
@@ -78,7 +77,6 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                 driver_id: profile.driver_id,
                 device_id: await DeviceInfo.getUniqueId(),
             });
-
             if (!data?.ok && data?.status == 'false') {
                 await AsyncStorage.clear();
                 navigation.reset({
@@ -88,7 +86,7 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                 return;
             }
             setIsOnline(data?.live_status ? true : false);
-            // console.log(profileDetails,"UPDATE_PROFILE")
+        
             dispatch({
                 type: 'PROFILE_DETAILS',
                 payload: data,
@@ -107,7 +105,6 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
         setLoading(true);
         const deviceId = await DeviceInfo.getUniqueId();
         const newStatus = isOnline ? '0' : '1';
-
         const payload = {
             driver_id: profile.driver_id,
             live_status: newStatus,
@@ -115,14 +112,15 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
             lat: location?.latitude,
             lon: location?.longitude,
         };
-
         try {
             const data = await fetchData('updateprofile', 'PATCH', payload, {
                 Authorization: `${accessToken}`,
                 driver_id: profile.driver_id,
                 device_id: deviceId,
             });
-
+                // console.log(data,"UPDATE_PROFILE")
+                // Alert.alert(JSON.stringify(data))
+            // Alert.alert(JSON.stringify(data))
             if (!data?.ok && data?.status == 'false') {
                 await AsyncStorage.clear();
                 navigation.reset({
@@ -131,24 +129,22 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                 });
                 return;
             }
-            dispatch({
-                type: 'UPDATE_PROFILE',
-                payload: data,
-            });
-
+            // dispatch({
+            //     type: 'UPDATE_PROFILE',
+            //     payload: data.result,
+            // });
             setIsOnline(newStatus === '1');
         } catch (error) {
             console.error('Error updating profile status:', error);
         } finally {
             setLoading(false);
+            fetchProfileData()
         }
     };
-
     if (!profileStatus) return null;
     const onlineText = 'You are Online';
     const offlineText = 'You’ll miss new orders when offline.';
     // Alert.alert(profileDetails?.subscription_status)
-
     return (
         <View style={[styles.card, { backgroundColor: COLORS[theme].background }]}>
             {(profileDetails?.partner_type.includes('Transport') &&
@@ -157,7 +153,6 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                     <Text style={[poppins.semi_bold.h6, styles.statusText, { color: COLORS[theme].primary }]}>
                         Subscription
                     </Text>
-
                     <TouchableOpacity
                         onPress={() => navigation.navigate('SubscriptionList')}
                         style={{
@@ -198,7 +193,6 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
         </View>
     );
 };
-
 const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',

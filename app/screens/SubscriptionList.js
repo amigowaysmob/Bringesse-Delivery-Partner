@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text,
-  FlatList, StyleSheet, ActivityIndicator,
-  Image, TouchableOpacity, Modal,
-  Alert, ToastAndroid,
+  View, Text, FlatList, StyleSheet, ActivityIndicator,
+  Image, TouchableOpacity, Modal, Alert, ToastAndroid,
+  NativeEventEmitter,
+  NativeModules,
 } from 'react-native';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
@@ -19,6 +19,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import AutoCloseMessageModal from '../components/header/autoCloseModal';
+import HyperSDK from 'hyper-sdk-react'; // ✅ correct import (one only)
 
 const SubscriptionList = () => {
 
@@ -80,6 +81,99 @@ const SubscriptionList = () => {
     setProcessing(true);
     fnGetRazorPay();
   };
+
+
+  /* ---------------------- 1️⃣ INITIATE JUSPAY SDK ---------------------- */
+  const initiateJuspay = () => {
+    const initPayload = {
+      requestId: "init_" + Date.now(),
+      service: "in.juspay.hyperpay",
+      payload: {
+        action: "initiate",
+        clientId: "amigoways",
+        merchantId: "amigoways",
+        environment: "sandbox",
+      },
+    };
+    // Alert.alert("test")
+    console.log("Initiating JusPay SDK...");
+    // HyperSDK.initiate(JSON.stringify(initPayload));
+
+  };
+
+  /* ---------------------- 2️⃣ EVENT LISTENER ---------------------- */
+  useEffect(() => {
+    // 🔥 IMPORTANT → Check module available
+    const JUSPAY_MODULE = NativeModules.HyperSdkReact || NativeModules.HyperSDK;
+
+    const eventEmitter = new NativeEventEmitter(JUSPAY_MODULE);
+
+    // Start listener
+    const eventListener = eventEmitter.addListener("HyperEvent", (resp) => {
+      const data = JSON.parse(resp);
+      const event = data.event || "";
+      console.log("🔥 JusPay Event:", event, data);
+      switch (event) {
+        case "initiate_result":
+          console.log("JusPay SDK Initiated Successfully");
+          showToast("JusPay Initialized");
+          break;
+
+        case "hide_loader":
+          console.log("Hide Loader Triggered");
+          break;
+        /* ----------- FINAL PAYMENT RESULT ------------ */
+        case "process_result":
+          const hasError = data.error || false;
+          const payload = data.payload || {};
+          const status = payload.status || ""; // charged, failed, aborted etc.
+          console.log("📌 Final Process Result:", payload);
+          if (!hasError) {
+            // showToast("Payment Success!");
+            // console.log(data?.orderId,"SendParams")
+            let payLoad = {
+              driverId: profileDetails?.driver_id,
+              transactionId: data?.requestId,
+              duration: selectedSubscription?.duration,
+              durationType: selectedSubscription?.durationType,
+              orderCount: selectedSubscription?.orderCount,
+              totalAmount: selectedSubscription?.price,
+              paidAmount: selectedSubscription?.price,
+              walletUsed: 0,
+              orderId: data?.orderId,
+              subscriptionId: selectedSubscription?._id,
+              currency: profileDetails?.currency_code
+            };
+            // console.log(data?.orderId,"SendParamspayLoad")
+            fnGetPaymentStatus(payLoad);
+          } else {
+            switch (status) {
+              case "backpressed":
+                showToast("Payment Aborted.");
+                break;
+              case "user_aborted":
+                showToast("Payment Aborted.");
+                break;
+              case "pending_vbv":
+              case "authorizing":
+                showToast("Payment Pending...");
+                break;
+              default:
+                showToast("Payment Failed.");
+                break;
+            }
+          }
+          break;
+
+        default:
+          console.log("Unhandled Event:", data);
+          break;
+      }
+    });
+    // Always call INITIATE before user pays
+    initiateJuspay();
+    return () => eventListener.remove();
+  }, []);
 
   const renderItem = ({ item }) => (
     <View style={[styles.card, {
@@ -151,7 +245,7 @@ const SubscriptionList = () => {
   );
   const renderActiveItem = ({ item }) => (
     <View style={[{
-      backgroundColor:'green',
+      backgroundColor: 'green',
       borderColor: 'green',
       flexDirection: 'row', padding: wp(3),
       borderRadius: wp(2), elevation: 2,
@@ -162,7 +256,7 @@ const SubscriptionList = () => {
       <View style={styles.detailsContainer}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: wp(2) }}>
           <View style={{ flexDirection: "column" }}>
-            <Text numberOfLines={2} style={[poppins.regular.h7, { color: COLORS[theme].white, textTransform: "capitalize" ,maxWidth:wp(45)}]}>{`${item?.name}`}</Text>
+            <Text numberOfLines={2} style={[poppins.regular.h7, { color: COLORS[theme].white, textTransform: "capitalize", maxWidth: wp(45) }]}>{`${item?.name}`}</Text>
             <Text style={[poppins.regular.h7, { color: COLORS[theme].white, textTransform: "capitalize" }]}>{`Duration : ${item?.duration} ${item?.durationType}`}</Text>
           </View>
           <View>
@@ -191,6 +285,7 @@ const SubscriptionList = () => {
   };
 
   const fnGetRazorPay = async () => {
+
     try {
       const data = await fetchData('createPaymentIntent/', 'POST', {
         driver_id: profileDetails.driver_id,
@@ -200,10 +295,24 @@ const SubscriptionList = () => {
         driver_id: profileDetails.driver_id,
       });
       setProcessing(false);
-      initRazorPay(data?.data);
+      // Alert.alert(JSON.stringify(data?.data,null,2))
+      // console.log(JSON.stringify(data?.data?.order?.sdk_payload,null,2),"data?.data,null,2")
+      if (data?.gateway == 'juspay') {
+        startPayment(data?.data?.order?.sdk_payload);
+      } else {
+        initRazorPay(data?.data);
+      }
+      // initRazorPay(data?.data);
     } catch (error) {
       console.error('profileDetails:', error);
     }
+  };
+
+  /* ---------------------- 4️⃣ START PAYMENT ---------------------- */
+  const startPayment = (payLoad) => {
+    console.log("Starting Payment...", HyperSDK.process(JSON.stringify(payLoad))
+    );
+    HyperSDK.process(JSON.stringify(payLoad));
   };
   const initRazorPay = (payLoad) => {
     const options = {
@@ -212,7 +321,7 @@ const SubscriptionList = () => {
       currency: siteDetails?.currency_code,
       key: siteDetails?.razorKey,
       amount: payLoad?.amount,
-      name: selectedSubscription?.name,
+      name: 'Bringesse',
       order_id: payLoad?.orderId,
       prefill: {
         email: profileDetails?.email,
@@ -245,13 +354,19 @@ const SubscriptionList = () => {
       });
   };
 
+  const showToast = (msg) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(msg, ToastAndroid.SHORT);
+    } else {
+      console.log('Toast:', msg);
+    }
+  };
   const fnGetPaymentStatus = async (payLoad) => {
     try {
       const data = await fetchData('subscribe/', 'POST', payLoad, {
         Authorization: `${accessToken}`,
         driver_id: profileDetails.driver_id,
       });
-
       // Alert.alert(JSON.stringify(data, null, 2));
       if (data?.status === true) {
         setProcessing(false);
@@ -288,12 +403,12 @@ const SubscriptionList = () => {
             {(
               <View style={{ marginHorizontal: wp(3), marginVertical: hp(1) }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                 {activeSubscription &&  <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary, marginBottom: hp(1) }]}>
+                  {activeSubscription && <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary, marginBottom: hp(1) }]}>
                     {t('Active Subscription')}
                   </Text>}
                   <MaterialCommunityIcon onPress={() => navigation.navigate('SubsciptionHistory')} name="clock" size={wp(6)} color={COLORS[theme].textPrimary} />
                 </View>
-                {activeSubscription &&  renderActiveItem({ item: activeSubscription })}
+                {activeSubscription && renderActiveItem({ item: activeSubscription })}
               </View>
             )}
             {/* 🔽 Inactive Subscriptions List */}
@@ -349,13 +464,12 @@ const SubscriptionList = () => {
             <Text style={[poppins.regular.h6, { marginTop: hp(2), color: COLORS[theme].textPrimary }]}>
               Are you sure you want to buy this subscription?
             </Text>
-
             <View style={styles.modalActions}>
               <TouchableOpacity
                 onPress={() => setConfirmVisible(false)}
                 style={[styles.modalButton, { backgroundColor: COLORS[theme].cardBackground, borderColor: "#CCC", borderWidth: wp(0.3) }]}
               >
-                <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].black }]}>Cancel</Text>
+                <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].primary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={confirmPurchase}
@@ -440,5 +554,4 @@ const styles = StyleSheet.create({
     borderRadius: wp(2), alignItems: 'center',
   },
 });
-
 export default SubscriptionList;

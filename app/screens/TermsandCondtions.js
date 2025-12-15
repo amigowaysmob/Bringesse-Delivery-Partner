@@ -7,11 +7,13 @@ import HeaderBar from '../components/header';
 import { COLORS } from '../resources/colors';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
+import { useSelector } from 'react-redux';
+import HTML from 'react-native-render-html';
 
 const TermsAndConditions = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-
+  const siteDetails = useSelector(state => state.Auth.siteDetails);
   const terms = [
     {
       title: '1. Acceptance of Terms',
@@ -54,18 +56,29 @@ const TermsAndConditions = () => {
         'These terms may be updated periodically. Continued use of the platform implies acceptance of the latest terms.',
     },
   ];
+  // console.log('siteDetails', siteDetails?.terms_condition);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
       <HeaderBar title={t('Terms and Conditions')} showBackArrow />
-
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <HTML
+          source={{ html: siteDetails?.terms_condition }}
+          contentWidth={wp(100)}  // Ensures the content is responsive to screen size
+          tagsStyles={{
+            p: {
+              color: COLORS[theme].textPrimary,
+              fontSize: wp(4),
+              lineHeight: hp(3.5),
+            },
+          }}
+        />
         {terms.map((item, index) => (
           <View key={index} style={styles.termContainer}>
             <Text style={[styles.termTitle, { color: COLORS[theme].textPrimary }]}>
               {item.title}
             </Text>
-            <Text style={[styles.termContent, { color: COLORS[theme].textPrimary ,lineHeight:wp(5)}]}>
+            <Text style={[styles.termContent, { color: COLORS[theme].textPrimary, lineHeight: wp(5) }]}>
               {item.content}
             </Text>
           </View>

@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View, Text, StyleSheet, ActivityIndicator, ToastAndroid, Image, TouchableOpacity, Linking,
-  Alert,
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ToastAndroid,
+  Image,
+  TouchableOpacity,
+  Linking,
 } from "react-native";
 import { hp, wp } from "../resources/dimensions";
-import { poppins } from "../resources/fonts";
 import { COLORS } from "../resources/colors";
 import { useTheme } from "../context/ThemeContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -18,8 +23,6 @@ import Geolocation from "react-native-geolocation-service";
 import polyline from "@mapbox/polyline";
 import MaterialCommunityIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import BookingConfirmModal from "./BookingConfirmModal";
-import BookingDetailsModal from "./BookingDetailsModal";
-import ConfirmModal from "../components/header/ConfirmModal";
 const GOOGLE_MAPS_APIKEY = "AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc";
 const BookingAction = ({ route }) => {
   const { theme } = useTheme();
@@ -27,99 +30,48 @@ const BookingAction = ({ route }) => {
   const navigation = useNavigation();
   const profile = useSelector((state) => state.Auth.profile);
   const siteDetails = useSelector((state) => state.Auth.siteDetails);
-  const { bid, data, uId } = route.params;
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const { data, uId } = route.params;
+
   const [bookingDetails, setBookingDetails] = useState(data);
   const [currentLoc, setCurrentLoc] = useState(null);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [confirmModalShow, setConfirmModal] = useState(false);
   const mapRef = useRef(null);
+
   // ---------------- GET CURRENT LOCATION ----------------
-  const getLocationOnce = async () => {
-    return new Promise((resolve, reject) => {
+  const getLocationOnce = () =>
+    new Promise((resolve, reject) => {
       Geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
-          setCurrentLoc({ latitude, longitude });
-          resolve({ latitude, longitude });
+          const loc = { latitude, longitude };
+          setCurrentLoc(loc);
+          resolve(loc);
         },
-        (err) => {
-          console.log(err);
-          reject(err);
-        },
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
       );
     });
-  };
 
   // ---------------- UPDATE LOCATION ----------------
   const updateLocation = async () => {
-    if (!profile?.driver_id || !currentLoc) return;
+    if (!currentLoc || !bookingDetails?.orderId?._id) return;
     try {
       const payload = {
-        orderId: bookingDetails?.orderId?._id,
-        driverId: profile.driver_id,
+        orderId: bookingDetails.orderId._id,
+        driverId: profile?.driver_id,
         lat: currentLoc.latitude,
         lon: currentLoc.longitude,
       };
-      const res = await fetchData('update/order/location', 'POST', payload, null);
-      console.log(res, "locationres")
-      if (res?.status) {
-        // ToastAndroid.show(res.message, ToastAndroid.SHORT);
-      }
+      await fetchData("update/order/location", "POST", payload);
     } catch (err) {
-      console.error('UPDATE booking error:', err);
-      ToastAndroid.show('Something went wrong', ToastAndroid.SHORT);
+      console.log("Location update failed", err);
     }
   };
-  const handleComplete = async (nextStatus, otp) => {
-    // Check empty OTP
-    if (!otp || otp.trim() === "") {
-      ToastAndroid.show("Please enter OTP", ToastAndroid.SHORT);
-      return;
-    }
-    // Check OTP length
-    if (otp.length !== 4) {
-      ToastAndroid.show("OTP must be 4 digits", ToastAndroid.SHORT);
-      return;
-    }
-    // Check numeric only
-    if (!/^\d+$/.test(otp)) {
-      ToastAndroid.show("OTP must contain only numbers", ToastAndroid.SHORT);
-      return;
-    }
-    // Validate with backend/user stored OTP
-    const actualOtp = bookingDetails?.userOtp?.toString();
-    if (otp !== actualOtp) {
-      ToastAndroid.show("Invalid OTP! Please try again", ToastAndroid.SHORT);
-      return;
-    }
-    try {
-      const payload = {
-        orderId: bookingDetails?.orderId?._id,
-        driverId: profile.driver_id,
-        lat: currentLoc.latitude,
-        lon: currentLoc.longitude,
-        status: "complete",
-      };
-      const res = await fetchData("update/order", "POST", payload, null);
-      console.log(res, "order?UPDATE");
-      if (res?.status) {
-        navigation?.goBack();
-        ToastAndroid.show(res.message, ToastAndroid.SHORT);
-      } else {
-        ToastAndroid.show(res.message, ToastAndroid.SHORT);
-      }
-    } catch (err) {
-      console.error("UPDATE booking error:", err);
-      ToastAndroid.show("Something went wrong", ToastAndroid.SHORT);
-    }
-    finally{
-    setConfirmModal(false);
-    }
-  };
+
   // ---------------- FETCH ROUTE ----------------
   const fetchRoute = async (origin, destination) => {
+    if (!origin || !destination) return [];
     try {
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${GOOGLE_MAPS_APIKEY}`
@@ -134,139 +86,241 @@ const BookingAction = ({ route }) => {
     }
     return [];
   };
+
   // ---------------- INITIALIZE ----------------
   useEffect(() => {
+    let interval;
     const init = async () => {
       try {
-        const location = await getLocationOnce();
-        setBookingDetails(data);
-        const interval = setInterval(updateLocation, 10000);
-        // Load route
-        if (!bookingDetails?.deliveryAddress) return
-        if (bookingDetails?.deliveryAddress?.address) {
-          const d = bookingDetails.deliveryAddress.address;
-          const route = await fetchRoute(location, { latitude: d.lat, longitude: d.lon });
+        const loc = await getLocationOnce();
+
+        // Normalize delivery address
+        const d = bookingDetails?.deliveryAddress?.address
+          ? bookingDetails.deliveryAddress.address
+          : bookingDetails?.deliveryAddress ?? null;
+
+        if (d?.lat && (d?.lon ?? d?.lng)) {
+          const dest = {
+            latitude: d.lat,
+            longitude: d.lon ?? d.lng,
+          };
+          const route = await fetchRoute(loc, dest);
           setRouteCoordinates(route);
         }
-        return () => clearInterval(interval);
+
+        interval = setInterval(updateLocation, 10000);
       } catch (err) {
-        console.log("Location init error:", err);
+        console.log("Init error:", err);
       }
     };
     init();
+    return () => clearInterval(interval);
   }, []);
+
   // ---------------- FIT MAP ----------------
   useEffect(() => {
-    if (!mapRef.current || !currentLoc || !bookingDetails?.deliveryAddress?.address) return;
-    const d = bookingDetails.deliveryAddress.address;
-    mapRef.current.fitToCoordinates(
-      [currentLoc, { latitude: d.lat, longitude: d.lon }],
-      { edgePadding: { top: 80, bottom: 80, left: 80, right: 80 }, animated: true }
-    );
+    const d = bookingDetails?.deliveryAddress?.address
+      ? bookingDetails.deliveryAddress.address
+      : bookingDetails?.deliveryAddress ?? null;
+
+    if (!mapRef.current || !currentLoc || !d?.lat) return;
+
+    mapRef.current.fitToCoordinates([currentLoc, { latitude: d.lat, longitude: d.lon ?? d.lng }], {
+      edgePadding: { top: 80, bottom: 80, left: 80, right: 80 },
+      animated: true,
+    });
   }, [routeCoordinates]);
-  // ---------------- CALL ----------------
-  const makeCall = (phoneNumber) => Linking.openURL(`tel:${phoneNumber}`);
+
+  // ---------------- HANDLE ORDER COMPLETE ----------------
+  const handleComplete = async (nextStatus, otp) => {
+    const actualOtp = bookingDetails?.userOtp?.toString();
+    if (!otp) return ToastAndroid.show("Please enter OTP", ToastAndroid.SHORT);
+    if (otp.length !== 4) return ToastAndroid.show("OTP must be 4 digits", ToastAndroid.SHORT);
+    if (!/^\d+$/.test(otp)) return ToastAndroid.show("OTP must be numbers only", ToastAndroid.SHORT);
+    if (otp !== actualOtp) return ToastAndroid.show("Invalid OTP", ToastAndroid.SHORT);
+
+    try {
+      const payload = {
+        orderId: bookingDetails.orderId?._id,
+        driverId: profile.driver_id,
+        lat: currentLoc.latitude,
+        lon: currentLoc.longitude,
+        status: "complete",
+      };
+      const res = await fetchData("update/order", "POST", payload);
+      if (res?.status) {
+        navigation.goBack();
+        ToastAndroid.show(res.message, ToastAndroid.SHORT);
+      } else ToastAndroid.show(res.message, ToastAndroid.SHORT);
+    } catch {
+      ToastAndroid.show("Something went wrong", ToastAndroid.SHORT);
+    } finally {
+      setConfirmModal(false);
+    }
+  };
+
+  // ---------------- PHONE CALL ----------------
+  const makeCall = (phoneNumber) => {
+    if (!phoneNumber) return;
+    Linking.openURL(`tel:${phoneNumber}`);
+  };
+
   if (!currentLoc) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center]}>
         <HeaderBar title={t("Booking")} showBackArrow />
         <ActivityIndicator size="large" color={COLORS[theme].accent} />
-        <Text style={{ alignSelf: "center" }}>Fetching location...</Text>
+        <Text style={{ alignSelf: "center", color: COLORS[theme].textPrimary }}>
+          Fetching location...
+        </Text>
       </View>
     );
   }
-  const delivery = bookingDetails.deliveryAddress.address;
+  // Normalize delivery address
+  const d = bookingDetails?.deliveryAddress?.address
+    ? bookingDetails.deliveryAddress.address
+    : bookingDetails?.deliveryAddress ?? null;
+
   const customer = bookingDetails?.orderId?.userId;
+
   return (
-    <GestureHandlerRootView style={{ flex: 1,backgroundColor:COLORS[theme].background }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
       <HeaderBar title={t("Booking")} showBackArrow />
-      {/* <Text>{JSON.stringify(bookingDetails?.orderId?._id)}</Text> */}
+
       {/* MAP */}
-      {currentLoc && delivery &&
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={{
-            latitude: currentLoc.latitude,
-            longitude: currentLoc.longitude,
-            latitudeDelta: 0.04,
-            longitudeDelta: 0.04,
-          }}
-          showsUserLocation
-        >
-          <Marker coordinate={currentLoc}>
-            <Image
-              source={{ uri: `${siteDetails?.media_url}drivers/images/${profile?.driver_image}` }}
-              style={styles.driverImage}
-            />
-          </Marker>
-          {delivery && (
-            <Marker coordinate={{ latitude: delivery.lat, longitude: delivery.lon }} pinColor="green" title="Delivery Location" />
-          )}
-          {routeCoordinates && routeCoordinates.length > 0 && <Polyline coordinates={routeCoordinates} strokeColor="blue" strokeWidth={4} />}
-        </MapView>
-      }
-      {/* BOTTOM CARD */}
-      <View style={[styles.card, { backgroundColor: '#ccc' }]}>
-        <View style={styles.rowSpace}>
-          <Text style={[poppins.semi_bold.h6, styles.statusText]}>
-            Booking {bookingDetails.status}
-          </Text>
-          <Text style={[poppins.semi_bold.h6, styles.statusText]}>#{uId}</Text>
-        </View>
-        <TouchableOpacity style={styles.viewDetailsBtn}
-        //  onPress={() => setShowDetailsModal(true)}
-        >
-          <View>
-            <Text style={[poppins.regular.h6, { color: COLORS[theme].accent }]}>{customer?.name}</Text>
-            <Text style={[poppins.regular.h6, { color: COLORS[theme].accent }]}>{customer?.contactNo}</Text>
-          </View>
-          <MaterialCommunityIcon
-            name="phone"
-            onPress={() => makeCall(customer?.contactNo)}
-            size={wp(10)}
-            color={COLORS[theme].accent}
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={{
+          latitude: currentLoc.latitude,
+          longitude: currentLoc.longitude,
+          latitudeDelta: 0.04,
+          longitudeDelta: 0.04,
+        }}
+        showsUserLocation
+      >
+        {/* DRIVER MARKER */}
+        <Marker coordinate={currentLoc}>
+          <Image
+            source={{
+              uri: profile?.driver_image
+                ? `${siteDetails?.media_url}drivers/images/${profile.driver_image}`
+                : "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+            }}
+            style={styles.driverImage}
           />
+        </Marker>
+
+        {/* DELIVERY MARKER */}
+        {d?.lat && (
+          <Marker
+            coordinate={{
+              latitude: d.lat,
+              longitude: d.lon ?? d.lng,
+            }}
+            pinColor="green"
+            title="Delivery Location"
+          />
+        )}
+
+        {/* POLYLINE */}
+        {routeCoordinates.length > 0 && (
+          <Polyline
+            coordinates={routeCoordinates}
+            strokeColor="red"      // try "#0000FF" or "red" if not visible
+            strokeWidth={wp(1)}        // make it thicker to see clearly
+          />
+        )}
+      </MapView>
+      {/* BOTTOM CARD */}
+      <View style={[styles.card, { backgroundColor: COLORS[theme].cardBackground }]}>
+        <View style={styles.rowSpace}>
+          <Text style={[styles.statusText, { color: COLORS[theme].textPrimary }]}>
+            Booking {bookingDetails?.status}
+          </Text>
+          <Text style={[styles.statusText, { color: COLORS[theme].textPrimary }]}>#{uId}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.viewDetailsBtn}>
+          <View>
+            <Text style={[styles.customerText, { color: COLORS[theme].textPrimary }]}>
+              {customer?.name ?? "Unknown"}
+            </Text>
+            <Text style={[styles.customerText, { color: COLORS[theme].textPrimary }]}>
+              {customer?.contactNo ?? "N/A"}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => makeCall(customer?.contactNo)}
+            style={styles.whatsappBtn}
+          >
+            <MaterialCommunityIcon name="whatsapp" size={wp(10)} color="#25D366" />
+          </TouchableOpacity>
         </TouchableOpacity>
-        {bookingDetails.status !== "completed" && (
+        {bookingDetails?.status !== "completed" && (
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: COLORS[theme].accent }]}
             onPress={() => setConfirmModal(true)}
           >
-            <Text style={[poppins.semi_bold.h5, { color: "#fff" }]}>
-              {bookingDetails.status === "accepted" ? "Start Pickup" : "Mark Completed"}
+            <Text style={{ color: "#fff" }}>
+              {bookingDetails?.status === "accepted" ? "Start Pickup" : "Mark Completed"}
             </Text>
           </TouchableOpacity>
         )}
       </View>
-      {/* it wwill be used later */}
+
       <BookingConfirmModal
-        visible={confirmModalShow}
-        // status={bookingDetails.status}
         theme={theme}
+        visible={confirmModalShow}
         onConfirm={handleComplete}
         onClose={() => setConfirmModal(false)}
       />
-      {/* <ConfirmModal
-        visible={confirmModalShow}
-        onCancel={() => setConfirmModal(false)}
-        onConfirm={() => handleComplete()}
-        // loading={acceptLoading}
-        title="Confirm Accept"
-        message={`Are you sure you want to complete the Order?`}
-      /> */}
     </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
   map: { width: wp(100), height: hp(90) },
-  driverImage: { width: wp(15), height: wp(15), borderRadius: wp(7.5), borderWidth: wp(0.5), borderColor: "#fff" },
-  card: { position: "absolute", bottom: hp(1), left: wp(2), right: wp(2), padding: wp(4), borderRadius: wp(2), elevation: 3 },
-  rowSpace: { flexDirection: "row", justifyContent: "space-between" },
-  statusText: { color: "green", textTransform: "capitalize" },
-  viewDetailsBtn: { paddingHorizontal: wp(5), paddingVertical: hp(1.2), borderWidth: 1, borderColor: "#999", borderRadius: wp(2), marginVertical: hp(1.5), flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  actionButton: { paddingVertical: hp(1.5), borderRadius: wp(2), alignItems: "center" },
+  driverImage: {
+    width: wp(15),
+    height: wp(15),
+    borderRadius: wp(8),
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  card: {
+    position: "absolute",
+    bottom: hp(1),
+    left: wp(2),
+    right: wp(2),
+    padding: wp(4),
+    borderRadius: wp(2),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  rowSpace: { flexDirection: "row", justifyContent: "space-between", marginBottom: hp(1) },
+  statusText: { fontSize: wp(4), fontWeight: "bold" },
+  viewDetailsBtn: {
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.5),
+    borderWidth: 1,
+    borderColor: "#999",
+    borderRadius: wp(2),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  customerText: { fontSize: wp(4) },
+  whatsappBtn: { justifyContent: "center", alignItems: "center" },
+  actionButton: {
+    marginTop: hp(1.5),
+    paddingVertical: hp(1.5),
+    borderRadius: wp(2),
+    alignItems: "center",
+  },
   center: { flex: 1, },
 });
 

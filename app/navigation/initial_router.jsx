@@ -26,6 +26,11 @@ import PendingHistory from '../screens/PendingHistory';
 import PendingOrdersHistory from '../screens/PendingOrdersHistory';
 import BookingProductAction from '../screens/BookingProductAction';
 import UploadDriverDocs from '../screens/UploadDriverDocs';
+import ReferFriend from '../screens/ReferFriend';
+import HyperJusPay from '../screens/HyperJusPay';
+import QuickShare from '../screens/QuickShare';
+import CustomerSupport from '../screens/CustomerSupport';
+import uploadRegisterDocs from '../screens/uploadRegisterDocs';
 const Stack = createNativeStackNavigator();
 const MyTheme = {
   dark: true,
@@ -54,7 +59,8 @@ function InitialRouter() {
         }} />
         <Stack.Screen name="GetStartedScreen" component={GetStartedScreen} />
         <Stack.Screen name="PersonalInfoScreen" component={PersonalInfoScreen} />
-        <Stack.Screen name="EditProfile" component={EditProfile} />
+        <Stack.Screen name="EditProfile" component={EditProfile}
+        />
         <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
         <Stack.Screen name="WalletHistory" component={WalletHistory} />
         <Stack.Screen name="UpdateProfilePic" component={UpdateProfilePic} />
@@ -73,9 +79,13 @@ function InitialRouter() {
         <Stack.Screen name="PendingOrdersHistory" component={PendingOrdersHistory} />
         <Stack.Screen name="BookingProductAction" component={BookingProductAction} />
         <Stack.Screen name="UploadDriverDocs" component={UploadDriverDocs} />
+        <Stack.Screen name="ReferFriend" component={ReferFriend} />
+        <Stack.Screen name="HyperJusPay" component={HyperJusPay} />
+        <Stack.Screen name="QuickShare" component={QuickShare} />
+        <Stack.Screen name="CustomerSupport" component={CustomerSupport} />
+        <Stack.Screen name="uploadRegisterDocs" component={uploadRegisterDocs} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
-
 export default InitialRouter;

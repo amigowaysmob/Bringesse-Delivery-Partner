@@ -31,23 +31,6 @@ const WalletHistory = () => {
   const limit = 10;
   const siteDetails = useSelector(state => state.Auth.siteDetails);
 
-  // Icon by order status
-  const getIconName = (status) => {
-    switch (status) {
-      case 'delivered':
-        return 'check-circle-outline';
-      case 'pending':
-        return 'clock-outline';
-      case 'on_the_way':
-      case 'dispatched':
-        return 'bike-fast';
-      case 'cancelled':
-        return 'close-circle-outline';
-      default:
-        return 'clipboard-text';
-    }
-  };
-
   // Translated status
   const getStatusText = (status) => {
     switch (status) {
@@ -164,7 +147,7 @@ const WalletHistory = () => {
   );
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
-      <HeaderBar title={t('WalletHistory') || 'WalletHistory'} showBackArrow={true} />
+      <HeaderBar title={t('Wallet History') || 'WalletHistory'} showBackArrow={true} />
       <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
         {/* Tabs */}
 
@@ -254,7 +237,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: wp(4),
-    fontFamily: poppins.semi_bold.h7.fontFamily,
+    fontFamily: poppins.semi_bold.h7.fontFamily,textTransform: 'capitalize',
   },
   scrollContent: {
     paddingVertical: hp(2),

@@ -20,7 +20,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import ConfirmModal from '../components/header/ConfirmModal';
 import messaging from '@react-native-firebase/messaging';
-import { IMAGE_ASSETS } from '../resources/images';
 import BlastedImage from 'react-native-blasted-image';
 
 const PendingOrdersHistory = () => {
@@ -86,12 +85,13 @@ const PendingOrdersHistory = () => {
         driverId: profile?.driver_id,
       };
       // driverId, orderId, status
-      console.log(payload, "payload")
+      // console.log(payload, "payload")
       const res = await fetchData('update/order', 'POST', payload, null);
       console.log(res)
       if (res?.status === true) {
         ToastAndroid.show(res.message, ToastAndroid.SHORT);
         setPendingList(prev => prev.filter(o => o.order_id !== selectedOrder.order_id));
+        navigation.navigate('OrdersScreen');
       } else {
         ToastAndroid.show(res?.message || 'Failed to accept order', ToastAndroid.SHORT);
       }
@@ -102,7 +102,6 @@ const PendingOrdersHistory = () => {
       setAcceptLoading(false);
       setConfirmVisible(false);
       setSelectedOrder({});
-
     }
   };
   // Render each order

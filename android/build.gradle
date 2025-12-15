@@ -5,6 +5,8 @@ buildscript {
         compileSdkVersion = 35
         targetSdkVersion = 35
         ndkVersion = "26.1.10909125"
+        clientId = "amigoways"
+        hyperSDKVersion = "2.2.1"
         kotlinVersion = "1.9.24"
         googlePlayServicesVersion = "21.0.1" // Required for Google services like Firebase, Maps, etc.
     }
@@ -20,13 +22,14 @@ buildscript {
         classpath("com.google.gms:google-services:4.4.2") // Google Services (e.g., Firebase)
     }
 }
-
 allprojects {
     repositories {
         mavenLocal()
         google()
         mavenCentral()
         maven { url "https://www.jitpack.io" }
+            maven { url "https://maven.juspay.in/jp-build-packages/hyper-sdk/" }
+            
         maven { url "https://rzp-mobile.s3.amazonaws.com/sdk/android" } // Razorpay repo (again for all subprojects)
     }
 }
@@ -40,6 +43,4 @@ subprojects { subproject ->
         }
     }
 }
-
-
 apply plugin: "com.facebook.react.rootproject"

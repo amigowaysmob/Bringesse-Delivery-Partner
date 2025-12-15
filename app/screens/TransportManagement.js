@@ -21,10 +21,8 @@ const TransportManagement = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('ongoing'); // lowercase for API compatibility
-
   const profile = useSelector(state => state.Auth.profile);
   const accessToken = useSelector(state => state.Auth.accessToken);
-
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
@@ -74,11 +72,9 @@ const TransportManagement = () => {
       return '';
     }
   };
-
   const fetchOrders = useCallback(
     async (pageNumber = 1, tab = activeTab) => {
       if (!accessToken || !profile?.driver_id) return;
-
       const deviceId = await DeviceInfo.getUniqueId();
       const payload = {
         driver_id: profile.driver_id,
