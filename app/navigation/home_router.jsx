@@ -27,7 +27,7 @@ function HomeTabRouter() {
       {
         // profileDetails?.partner_type?.includes('Delivery') &&
         <Tab.Screen
-          name={t('T-Social')}
+          name={t('OrdersScreen')}
           component={OrdersScreen}
         />
       }

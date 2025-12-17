@@ -97,7 +97,6 @@ const SubscriptionList = () => {
     };
     // Alert.alert("test")
     console.log("Initiating JusPay SDK...");
-    // HyperSDK.initiate(JSON.stringify(initPayload));
 
   };
 
@@ -127,10 +126,10 @@ const SubscriptionList = () => {
           const hasError = data.error || false;
           const payload = data.payload || {};
           const status = payload.status || ""; // charged, failed, aborted etc.
-          console.log("📌 Final Process Result:", payload);
+          // console.log("📌 Final Process Result:", payload);
           if (!hasError) {
             // showToast("Payment Success!");
-            // console.log(data?.orderId,"SendParams")
+            console.log(data?.orderId,"SendParams")
             let payLoad = {
               driverId: profileDetails?.driver_id,
               transactionId: data?.requestId,
@@ -144,7 +143,6 @@ const SubscriptionList = () => {
               subscriptionId: selectedSubscription?._id,
               currency: profileDetails?.currency_code
             };
-            // console.log(data?.orderId,"SendParamspayLoad")
             fnGetPaymentStatus(payLoad);
           } else {
             switch (status) {
@@ -368,6 +366,8 @@ const SubscriptionList = () => {
         driver_id: profileDetails.driver_id,
       });
       // Alert.alert(JSON.stringify(data, null, 2));
+      // console.log(JSON.stringify(data, null, 2));
+
       if (data?.status === true) {
         setProcessing(false);
         fetchSubscription();

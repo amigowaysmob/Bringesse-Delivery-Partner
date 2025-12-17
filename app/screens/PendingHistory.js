@@ -1,12 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  ToastAndroid,
+  View, Text, FlatList, StyleSheet,
+  ActivityIndicator, TouchableOpacity, ToastAndroid,
 } from 'react-native';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
@@ -30,11 +25,9 @@ const PendingHistory = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const navigation = useNavigation();
-
   const profile = useSelector(state => state.Auth.profile);
   const profileDetails = useSelector(state => state.Auth.profileDetails);
   const accessToken = useSelector(state => state.Auth.accessToken);
-
   const [pendingList, setPendingList] = useState([]);
   const { location, locationLoading } = useCurrentLocation();
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -42,35 +35,29 @@ const PendingHistory = () => {
   const [acceptLoading, setAcceptLoading] = useState(false);
   const [listLoading, setListLoading] = useState(false); // For initial list loader
   const [refreshing, setRefreshing] = useState(false); // ⭐ Pull-to-refresh
-
   // -----------------------------------------------------------------------
   // FETCH PENDING REQUEST API
   // -----------------------------------------------------------------------
   const fetchPendingRequest = useCallback(async () => {
     if (!accessToken || !profile?.driver_id || !location) return;
     if (!refreshing) setListLoading(true); // Only show full loader if not refreshing
-
     const headers = {
       Authorization: `${accessToken}`,
       driver_id: profile.driver_id,
     };
-
     const payLoad = {
       driverId: profile.driver_id,
       lat: location.latitude,
       lon: location.longitude,
       vehicleId: profileDetails?.vehicle_type,
     };
-
     try {
       const data = await fetchData('transport/pendingrequest', 'POST', payLoad, headers);
-
       if (!data?.ok && data?.status === 'false') {
         await AsyncStorage.clear();
         navigation.reset({ index: 0, routes: [{ name: 'login-screen' }] });
         return;
       }
-
       if (Array.isArray(data.pendingBookings)) {
         setPendingList(data.pendingBookings);
       }
@@ -81,10 +68,6 @@ const PendingHistory = () => {
       setRefreshing(false);
     }
   }, [accessToken, profile, profileDetails, location, navigation, refreshing]);
-
-  // -----------------------------------------------------------------------
-  // FCM Update
-  // -----------------------------------------------------------------------
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       try {
@@ -95,17 +78,9 @@ const PendingHistory = () => {
     });
     return unsubscribe;
   }, [fetchPendingRequest]);
-
-  // -----------------------------------------------------------------------
-  // AUTO FETCH ON MOUNT
-  // -----------------------------------------------------------------------
   useEffect(() => {
     fetchPendingRequest();
   }, [fetchPendingRequest]);
-
-  // -----------------------------------------------------------------------
-  // ACCEPT BOOKING FUNCTION
-  // -----------------------------------------------------------------------
   const acceptBooking = async () => {
     if (!selectedBooking) return;
     setAcceptLoading(true);
@@ -187,7 +162,6 @@ const PendingHistory = () => {
             color={COLORS[theme].accent}
           />
         </View>
-
         <View style={styles.textContainer}>
           <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].textPrimary }]}>
             Booking ID: {item.booking_uid}
@@ -218,7 +192,7 @@ const PendingHistory = () => {
           )}
 
           <TouchableOpacity
-            style={[styles.acceptBtn, { backgroundColor: 'green'}]}
+            style={[styles.acceptBtn, { backgroundColor: 'green' }]}
             onPress={() => {
               setSelectedBooking(item);
               setConfirmVisible(true);

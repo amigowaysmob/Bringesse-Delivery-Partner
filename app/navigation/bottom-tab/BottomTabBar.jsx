@@ -45,7 +45,7 @@ const getTabIcon = (routeName, isFocused, colorScheme) => {
       );
     case 'ExplorePackages':
       return <IonicIcon name="apps" color={iconColor} size={wp(6)} />;
-    case 'T-Social':
+    case 'OrdersScreen':
       return (
         <MaterialCommunityIcon
           name="cart-outline"

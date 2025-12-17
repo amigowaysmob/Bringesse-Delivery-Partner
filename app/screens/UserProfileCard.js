@@ -1,158 +1,300 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { COLORS } from '../resources/colors';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
 import { useSelector } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const UserProfileCard = () => {
-    const { theme } = useTheme();
-    const { t } = useTranslation();
-    const profile = useSelector(state => state.Auth.profileDetails);
-    const siteDetails = useSelector(state => state.Auth.siteDetails);
-    const navigation = useNavigation();
-    const userName = `${profile?.first_name || ''} ${profile?.last_name || ''}`;
-    // -------------------------------
-    // Navigation handlers with useCallback
-    // -------------------------------
-    const handleEditProfilePic = useCallback(() => {
-        navigation.navigate('UpdateProfilePic');
-    }, [navigation]);
-    const handleEditProfile = useCallback(() => {
-        navigation.navigate('EditProfile');
-    }, [navigation]);
-    // -------------------------------
-    // Animation setup
-    // -------------------------------
-    const slideAnim = useRef(new Animated.Value(30)).current; // initial vertical offset
-    const fadeAnim = useRef(new Animated.Value(0)).current; // initial opacity
+  const { theme } = useTheme();
+  const { t } = useTranslation();
+  const navigation = useNavigation();
 
-    useEffect(() => {
+  const profile = useSelector(state => state.Auth.profileDetails);
+  const siteDetails = useSelector(state => state.Auth.siteDetails);
+
+  const userName =
+    `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() ||
+    t('No name');
+
+  const imageUri =
+    profile?.driver_image
+      ? `${siteDetails?.media_url}drivers/images/${profile.driver_image}`
+      : null;
+
+  const [imageLoading, setImageLoading] = useState(true);
+
+  /* ---------------- Navigation ---------------- */
+  const handleEditProfilePic = useCallback(() => {
+    navigation.navigate('UpdateProfilePic');
+  }, []);
+
+  const handleEditProfile = useCallback(() => {
+    navigation.navigate('EditProfile');
+  }, []);
+
+  /* ---------------- Animations ---------------- */
+  const imageScale = useRef(new Animated.Value(0.8)).current;
+  const imageOpacity = useRef(new Animated.Value(0)).current;
+
+  const nameTranslateY = useRef(new Animated.Value(10)).current;
+  const nameOpacity = useRef(new Animated.Value(0)).current;
+
+  const btnTranslateY = useRef(new Animated.Value(10)).current;
+  const btnOpacity = useRef(new Animated.Value(0)).current;
+
+  const arrowTranslateX = useRef(new Animated.Value(15)).current;
+  const arrowOpacity = useRef(new Animated.Value(0)).current;
+
+  /* ---------------- Focus animation ---------------- */
+  useFocusEffect(
+    useCallback(() => {
+      imageScale.setValue(0.8);
+      imageOpacity.setValue(0);
+      nameTranslateY.setValue(10);
+      nameOpacity.setValue(0);
+      btnTranslateY.setValue(10);
+      btnOpacity.setValue(0);
+      arrowTranslateX.setValue(15);
+      arrowOpacity.setValue(0);
+
+      Animated.stagger(250, [
         Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 400,
-                useNativeDriver: true,
-            }),
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 400,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, []);
+          Animated.timing(imageOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(imageScale, {
+            toValue: 1,
+            friction: 6,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(nameOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(nameTranslateY, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(btnOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(btnTranslateY, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(arrowOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(arrowTranslateX, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    }, [])
+  );
 
-    return (
-        <>
-            <Pressable
-                onPress={handleEditProfile}
+  return (
+    <Pressable onPress={handleEditProfile}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: COLORS[theme].background,
+            borderColor: COLORS[theme].border || '#ccc',
+          },
+        ]}
+      >
+        {/* Profile Image */}
+        <TouchableOpacity
+          onPress={handleEditProfilePic}
+          activeOpacity={0.8}
+          style={styles.imageContainer}
+        >
+          <Animated.View
+            style={{
+              opacity: imageOpacity,
+              transform: [{ scale: imageScale }],
+            }}
+          >
+            {imageUri ? (
+              <>
+                {imageLoading && (
+                  <View style={styles.loader}>
+                    <ActivityIndicator color={COLORS[theme].accent} />
+                  </View>
+                )}
+
+                <Animated.Image
+                  source={{ uri: imageUri }}
+                  onLoadEnd={() => setImageLoading(false)}
+                  style={styles.profileImage}
+                />
+              </>
+            ) : (
+              <View style={styles.placeholder}>
+                <MaterialCommunityIcon
+                  name="account"
+                  size={wp(10)}
+                  color={COLORS[theme].textSecondary}
+                />
+              </View>
+            )}
+          </Animated.View>
+
+          <MaterialCommunityIcon
+            name="pencil-circle"
+            size={wp(7)}
+            style={styles.editIcon}
+            color={COLORS[theme].accent}
+          />
+        </TouchableOpacity>
+
+        {/* User Info */}
+        <View style={styles.infoContainer}>
+          <Animated.Text
+            numberOfLines={1}
+            style={[
+              poppins.semi_bold.h7,
+              styles.userName,
+              {
+                color: COLORS[theme].primary,
+                opacity: nameOpacity,
+                transform: [{ translateY: nameTranslateY }],
+              },
+            ]}
+          >
+            {userName}
+          </Animated.Text>
+
+          <Animated.View
+            style={{
+              opacity: btnOpacity,
+              transform: [{ translateY: btnTranslateY }],
+            }}
+          >
+            <TouchableOpacity
+              onPress={handleEditProfile}
+              activeOpacity={0.85}
+              style={[
+                styles.editButton,
+                { borderColor: COLORS[theme].buttonBg },
+              ]}
             >
+              <Text
+                style={[
+                  poppins.regular.h8,
+                  { color: COLORS[theme].buttonBg },
+                ]}
+              >
+                {t('Edit Profile')}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
-                <Animated.View
-                    onPress={handleEditProfile}
-                    style={[
-                        styles.card,
-                        {
-                            backgroundColor: COLORS[theme].background,
-                            borderColor: "#ccc",
-                            transform: [{ translateY: slideAnim }],
-                            opacity: fadeAnim,
-                        },
-                    ]}
-                >
-                    <>
-                        {/* Profile Image */}
-                        <TouchableOpacity onPress={handleEditProfilePic} style={styles.imageContainer}>
-                            <Image
-                                source={{ uri: siteDetails?.media_url + 'drivers/images/' + profile?.driver_image }}
-                                style={styles.profileImage}
-                            />
-                            <MaterialCommunityIcon
-                                name="pencil-circle"
-                                size={wp(7)}
-                                style={styles.editIcon}
-                                color={COLORS[theme].accent}
-                            />
-                        </TouchableOpacity>
-
-                        {/* User info */}
-                        <View style={styles.infoContainer}>
-                            <Text
-                                numberOfLines={1}
-                                style={[poppins.semi_bold.h7, styles.userName, { color: COLORS[theme].primary }]}
-                            >
-                                {userName}
-                            </Text>
-
-                            <TouchableOpacity
-                                onPress={handleEditProfile}
-                                style={[styles.editButton, { borderColor: COLORS[theme].buttonBg }]}
-                            >
-                                <Text style={[poppins.regular.h8, { color: COLORS[theme].buttonBg }]}>
-                                    {t('Edit Profile')}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                        <MaterialCommunityIcon
-                            name="chevron-right"
-                            size={wp(8)}
-                            style={{ alignSelf: 'center' }}
-                            color={COLORS[theme].textPrimary}
-                        />
-                    </>
-                </Animated.View>
-            </Pressable>
-        </>
-    );
+        {/* Arrow */}
+        <Animated.View
+          style={{
+            opacity: arrowOpacity,
+            transform: [{ translateX: arrowTranslateX }],
+          }}
+        >
+          <MaterialCommunityIcon
+            name="menu-right"
+            size={wp(8)}
+            color={COLORS[theme].textPrimary}
+          />
+        </Animated.View>
+      </View>
+    </Pressable>
+  );
 };
-const styles = StyleSheet.create({
-    card: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingVertical: wp(4), paddingHorizontal: wp(4),
-        borderRadius: wp(3), borderWidth: 0.5, marginHorizontal: wp(4),
-        marginVertical: wp(1),
-        shadowColor: '#000',
-        shadowOpacity: 0.12,
-        shadowOffset: { width: 0, height: 3 },
-        shadowRadius: 6,
-        elevation: 5,
-    },
-    imageContainer: {
-        position: 'relative',
-        marginRight: hp(3),
-    },
-    profileImage: {
-        width: wp(16),
-        height: wp(16),
-        borderRadius: wp(8),
-        borderWidth: 2,
-        borderColor: '#ccc',
-    },
-    editIcon: {
-        position: 'absolute',
-        bottom: -2,
-        right: -2,
-    },
-    infoContainer: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    userName: {
-        marginBottom: wp(2),
-        textTransform: 'capitalize',
-    },
-    editButton: {
-        paddingVertical: wp(1),
-        paddingHorizontal: wp(3),
-        borderRadius: wp(2),
-        borderWidth: 1,
-        alignSelf: 'flex-start',
-    },
-});
+
 export default UserProfileCard;
+
+/* ---------------- Styles ---------------- */
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: wp(4),
+    paddingHorizontal: wp(4),
+    borderRadius: wp(3),
+    borderWidth: 0.6,
+    marginHorizontal: wp(4),
+    marginVertical: wp(1.5),
+    elevation: 4,
+  },
+  imageContainer: {
+    position: 'relative',
+    marginRight: wp(4),
+  },
+  profileImage: {
+    width: wp(16),
+    height: wp(16),
+    borderRadius: wp(8),
+  },
+  placeholder: {
+    width: wp(16),
+    height: wp(16),
+    borderRadius: wp(8),
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loader: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  editIcon: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+  },
+  infoContainer: {
+    flex: 1,
+  },
+  userName: {
+    marginBottom: wp(1.5),
+    textTransform: 'capitalize',
+  },
+  editButton: {
+    paddingVertical: wp(0.8),
+    paddingHorizontal: wp(3),
+    borderRadius: wp(2),
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+});

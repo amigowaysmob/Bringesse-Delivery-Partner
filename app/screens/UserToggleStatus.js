@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
         borderWidth: wp(0.3),
         borderColor: '#ccc',
         position: 'relative',
-        top: wp(2),
         width: wp(95),
         alignSelf: 'center',
     },

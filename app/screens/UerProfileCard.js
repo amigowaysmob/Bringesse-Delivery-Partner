@@ -95,7 +95,7 @@ const UserProfileCard = ({ userstatus }) => {
   return (
     <View
       style={[
-        { backgroundColor: COLORS[theme].background, alignItems: "center", height: wp(48), borderRadius: wp(2), width: wp(98), alignSelf: "center" }
+        { backgroundColor: COLORS[theme].background, alignItems: "center", height: wp(46), borderRadius: wp(2), width: wp(98), alignSelf: "center" }
       ]}
     >
       {/* ---------- PROFILE CARD ---------- */}
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     marginTop: hp(1.2),
     borderWidth: wp(0.3),
     borderColor: '#ccc',
-    margin: wp(2),
+    margin: wp(2), 
     marginHorizontal: wp(4),
   },
   profileImage: {
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   infoContainer: { width: wp(40) },
-  nameText: { marginBottom: hp(0.5) },
+  nameText: { marginBottom: hp(0.5) ,textTransform: 'capitalize'},
   addressText: { marginBottom: hp(0.5) },
   buttonRow: {
     flexDirection: 'row',

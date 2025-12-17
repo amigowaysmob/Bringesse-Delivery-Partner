@@ -179,8 +179,8 @@ const TransportManagement = () => {
         />
       </View>
       <View style={styles.textContainer}>
-        <View style={{flexDirection:"row",justifyContent:"space-between"}}>
-          <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
             {item.categoryName || 'Category'}
           </Text>
           {
@@ -197,8 +197,8 @@ const TransportManagement = () => {
           Status: {getStatusText(item.status)}
         </Text>
 
-        <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1.5) }]}>
-          Created: {formatDateTime(item.createdAt)}
+        <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
+          {formatDateTime(item.createdAt)}
         </Text>
       </View>
 

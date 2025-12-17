@@ -12,7 +12,7 @@ export const fetchData = async (endpoint, method = 'GET', body = null, headers =
     headers: defaultHeaders,
     body: body ? JSON.stringify(body) : null,
   });
-  console?.log(response, "response")
+  // console?.log(response, "response")
   if (!response) {
     throw new Error('Network response was not ok');
   }

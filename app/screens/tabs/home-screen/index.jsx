@@ -249,6 +249,7 @@ const HomeScreen = () => {
       </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: hp(1), width: '100%' }}>
         <UerProfileCard userstatus={profileDetails?.live_status} />
+        <Text style={{color:"red"}} >{profileDetails?.welcomeStatus}</Text>
         {
           profileDetails?.welcomeStatus == '0' &&
           <WelcomeCard userstatus={profileDetails?.live_status} />

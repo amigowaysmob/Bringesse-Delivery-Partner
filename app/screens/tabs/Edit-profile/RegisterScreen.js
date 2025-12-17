@@ -5,7 +5,7 @@ import {
     KeyboardAvoidingView, TouchableOpacity, Text,
     Alert, PermissionsAndroid, ToastAndroid,
 } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import { ActivityIndicator, TextInput } from 'react-native-paper';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { hp, wp } from '../../../resources/dimensions';
@@ -33,6 +33,8 @@ const RegisterScreen = () => {
     const navigation = useNavigation();
     const siteDetails = useSelector(state => state.Auth.siteDetails);
     const [location, setLocation] = useState(null);
+    const [loading, setloading] = useState(false);
+
     const [verifyModalVisible, setVerifyModalVisible] = useState(false);
     // Focus effect will run every time screen is focused
     function parseQueryString(qs) {
@@ -228,7 +230,6 @@ const RegisterScreen = () => {
             // 2. Service Types
             const allServices = details.service_type || [];
             const { transportOptions, serviceType } = formValues;
-
             if (!transportOptions.length) {
                 setServiceTypes([]);
                 setFormValues(prev => ({ ...prev, serviceType: [] }));
@@ -300,6 +301,7 @@ const RegisterScreen = () => {
     };
     const handleSubmit = async () => {
         if (validateFields()) {
+        setloading(true);
             let payLoad = {
                 first_name: formValues?.firstName.trim(),
                 last_name: formValues?.lastName || "",
@@ -309,7 +311,7 @@ const RegisterScreen = () => {
                 location: formValues?.location,
                 lon: location?.longitude,   // Not collected, maybe from GPS
                 lat: location?.latitude,    // Not collected, maybe from GPS
-                service_type: formValues?.serviceType.length ? formValues?.serviceType.length : [],
+                service_type: Array.isArray(formValues?.serviceType) ? formValues.serviceType : [],
                 vehicle_type: formValues?.vehicleType,
                 partner_type: formValues?.transportOptions || "",
                 vehicle_category: formValues?.vehicleCategory,
@@ -347,6 +349,9 @@ const RegisterScreen = () => {
                 }
             } catch (error) {
                 console.error('profile API Error:', error);
+            }
+            finally {
+                setloading(false);
             }
         }
     };
@@ -410,8 +415,8 @@ const RegisterScreen = () => {
             item?.vehicles?.map(service => ({
                 label: service.name,
                 value: service._id,
-         
-                
+
+
             })) || []
         );
     };
@@ -451,9 +456,10 @@ const RegisterScreen = () => {
                 ]}>
                     <Text numberOfLines={1} style={[
                         styles.dropdownText,
-                        { color: value ? COLORS[theme].textPrimary : COLORS[theme].textPrimary, maxWidth: wp(65),
-                             textTransform: "capitalize"
-                         },
+                        {
+                            color: value ? COLORS[theme].textPrimary : COLORS[theme].textPrimary, maxWidth: wp(65),
+                            textTransform: "capitalize"
+                        },
                     ]}>
                         {value || `Select ${label}`}
                     </Text>
@@ -555,8 +561,9 @@ const RegisterScreen = () => {
                 </View>
                 <View style={{ marginTop: hp(3), marginBottom: hp(3) }}>
                     <TouchableOpacity
-                        disabled={!formValues?.acceptedTerms}
+                        disabled={!formValues?.acceptedTerms || loading}
                         onPress={handleSubmit}
+                        // disabled={loading}
                         activeOpacity={0.8}
                         style={{
                             backgroundColor: formValues?.acceptedTerms ? COLORS[theme].accent : COLORS[theme].accent + 60,
@@ -566,7 +573,11 @@ const RegisterScreen = () => {
                         }}
                     >
                         <Text style={[poppins.medium.h4, { color: COLORS[theme].white }]}>
-                            Register
+                            {
+                                loading ? 'Submitting...' 
+                                : 'Submit'
+                            }
+                            
                         </Text>
                     </TouchableOpacity>
                 </View>

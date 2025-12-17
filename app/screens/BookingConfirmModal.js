@@ -16,6 +16,7 @@ const BookingConfirmModal = ({ status, onClose, onConfirm, theme,visible }) => {
         }
         const nextStatus = status === 'accepted' ? 'picked' : 'completed';
         onConfirm(nextStatus, otp);
+        setOtp('');
     };
 
     return (

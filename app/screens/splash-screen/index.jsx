@@ -52,7 +52,6 @@ export default function SplashScreen() {
         },
       },
     });
-
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected);
     });

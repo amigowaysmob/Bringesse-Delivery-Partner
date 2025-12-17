@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  ActivityIndicator, RefreshControl,
-  Alert
+  ActivityIndicator, RefreshControl
 } from 'react-native';
 import {
   GestureHandlerRootView,
@@ -30,12 +29,13 @@ const OrdersScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const profile = useSelector(state => state.Auth.profile);
+
   // FCM listener
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async () => fetchOrders());
     return unsubscribe;
   }, [fetchOrders]);
-  // ============= Helper Functions =============
+
   const getIconName = (status) => {
     switch (status) {
       case 'delivered':
@@ -53,23 +53,7 @@ const OrdersScreen = () => {
         return 'clipboard-text';
     }
   };
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'delivered':
-      case 'complete':
-        return 'Order Delivered';
-      case 'pending':
-      case 'accept':
-        return 'Order Accepted';
-      case 'on_the_way':
-      case 'dispatched':
-        return 'On the Way';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return 'Order Status';
-    }
-  };
+
   const formatDateTime = (input) => {
     try {
       const date = new Date(input);
@@ -81,13 +65,13 @@ const OrdersScreen = () => {
       return '';
     }
   };
-  
+
   useFocusEffect(
     useCallback(() => {
       fetchOrders();
     }, [fetchOrders])
   );
-  // ================= Fetch Orders ====================
+
   const fetchOrders = useCallback(async () => {
     if (!profile?.driver_id) return;
     try {
@@ -102,12 +86,10 @@ const OrdersScreen = () => {
         });
         return;
       }
-
       if (!data?.orders?.length) {
         await AsyncStorage.removeItem('ACCEPTEDBOOKING');
       }
       setOrders(data.orders);
-      // console.log(data.orders[0].userOtp,"data.ordersdata.orders")/
     } catch (err) {
       console.error('Orders fetch error:', err);
     } finally {
@@ -115,108 +97,112 @@ const OrdersScreen = () => {
       setRefreshing(false);
     }
   }, [profile?.driver_id]);
+
   useEffect(() => {
     fetchOrders();
   }, []);
-  // ========== Pull to Refresh ============
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchOrders();
   };
-  // ========== Swipe to Change Tabs ============
+
   const onSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX > 80) {
-      // Swipe Right → Go to "Ongoing"
       setActiveTab('Ongoing');
     } else if (nativeEvent.translationX < -80) {
-      // Swipe Left → Go to "Completed"
       setActiveTab('Completed');
     }
   };
-  // ========== Filter Orders by Tab ============
   const filteredOrders = orders.filter(order =>
     activeTab === "Ongoing"
       ? order.status !== "delivered" && order.status !== "complete"
       : order.status === "delivered" || order.status === "complete"
   );
-  // =====================================================
   const renderItem = ({ item }) => {
-    const order = item.orderId;
-    const store = order?.storeId;
-    // console?.log(order,"testOrder")
+    const store = item?.store;
+    const address = item?.deliveryAddress;
     return (
       <TouchableOpacity
-        onPress={() => item.status == 'shipped' && navigation.navigate('BookingProductAction', {
-          bid: item?._id, acceptStatus: null, data: item, uId: order?.uniqueId
-        })}
+        disabled={item.status !== 'shipped'}
+        onPress={() =>
+          item.status === 'shipped' &&
+          navigation.navigate('BookingProductAction', {
+            bid: item?.orderId,
+            acceptStatus: null,
+            data: item,
+            uId: item?.orderId
+          })
+        }
         style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}
       >
         <View style={styles.iconContainer}>
           <MaterialCommunityIcon
-            name={getIconName(item.status)}
+            name={getIconName(item.orderStatus)}
             size={wp(7)}
             color={COLORS[theme].accent}
           />
         </View>
         <View style={styles.textContainer}>
-          {/* <Text>{JSON.stringify(order?.itemCount)}</Text> */}
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
+            <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
               {store?.name || 'Store'}
             </Text>
-            <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].textPrimary }]}>
-              {`#${order?.uniqueId}`}
+            <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
+              #{item?.uniqueId || '----'}
             </Text>
           </View>
-          <Text numberOfLines={1} style={[poppins.regular.h9, { color: COLORS[theme].textPrimary }]}>
-            {store?.address || 'No address'}
+
+          <Text style={[poppins.regular.h9, { color: COLORS[theme].textPrimary }]}>
+            {address?.location || 'No address'}
           </Text>
-          <Text style={[poppins.regular.h8, { marginTop: wp(1), color: COLORS[theme].textPrimary }]}>
-            {item.status}
+
+          <Text style={[poppins.regular.h8, { marginTop: wp(1), color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
+            {item?.status}
           </Text>
-          <Text style={[poppins.regular.h8, { marginTop: wp(1), color: COLORS[theme].textPrimary }]}>
-            {`Item Count: ${order?.itemCount || 0}`}
-          </Text>
+
           <Text style={[poppins.regular.h8, { marginTop: wp(1.5), color: COLORS[theme].textPrimary }]}>
             {formatDateTime(item.createdAt)}
           </Text>
-          {
-            order?.status !== "complete" &&
+
+          {item.status !== "complete" && (
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={[poppins.regular.h5, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-                {`OTP : ${order?.otp}`}
+              <Text style={[poppins.regular.h5, { color: COLORS[theme].textPrimary }]}>
+                OTP : {item?.otp || "----"}
               </Text>
-              <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-                {` Rs${order?.total?.toFixed(2) ?? '0.00'} `}
+              <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary }]}>
+                Rs {item?.total?.toFixed(2)}
               </Text>
             </View>
-          }
-          {
-            order?.status !== "complete" && item.status == 'shipped' &&
-            <View style={{ width: wp(25), height: hp(3.6), alignItems: "center", backgroundColor: COLORS[theme].accent, padding: wp(2), borderRadius: wp(2), alignSelf: "flex-end" }}>
-              <Text style={[poppins.semi_bold.h6, {
-                color: "#FFF", lineHeight: wp(3.5)
-              }]}>
+          )}
+          {item?.status === 'shipped' && (
+            <View
+              style={{
+                width: wp(25),
+                height: hp(3.6),
+                alignItems: "center",
+                backgroundColor: COLORS[theme].accent,
+                padding: wp(2),
+                borderRadius: wp(2),
+                alignSelf: "flex-end"
+              }}
+            >
+              <Text style={[poppins.semi_bold.h6, { color: "#FFF" ,lineHeight:wp(4.5)}]}>
                 View
               </Text>
             </View>
-          }
-
+          )}
         </View>
       </TouchableOpacity>
     );
   };
 
-  // =====================================================
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <HeaderBar title={t('Orders') || 'Orders'} showBackButton={false} />
-
-      <PanGestureHandler onGestureEvent={onSwipe}>
-        <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
-
-          {/* Tabs */}
+      <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
+        {/* Tabs with swipe handler */}
+        <PanGestureHandler onGestureEvent={onSwipe}>
           <View style={styles.tabContainer}>
             {['Ongoing', 'Completed'].map(tab => (
               <TouchableOpacity
@@ -241,35 +227,34 @@ const OrdersScreen = () => {
               </TouchableOpacity>
             ))}
           </View>
-
-          {loading ? (
-            <View style={styles.loader}>
-              <ActivityIndicator size="large" color={COLORS[theme].accent} />
-            </View>
-          ) : (
-            <FlatList
-              data={filteredOrders}
-              keyExtractor={(item) => item._id}
-              renderItem={renderItem}
-              contentContainerStyle={styles.scrollContent}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={[COLORS[theme].accent]}
-                />
-              }
-              ListEmptyComponent={
-                <View style={{ padding: wp(5), alignItems: 'center' }}>
-                  <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
-                    No orders found.
-                  </Text>
-                </View>
-              }
-            />
-          )}
-        </View>
-      </PanGestureHandler>
+        </PanGestureHandler>
+        {loading ? (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={COLORS[theme].accent} />
+          </View>
+        ) : (
+          <FlatList
+            data={filteredOrders}
+            keyExtractor={(item) => Math.random().toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[COLORS[theme].accent]}
+              />
+            }
+            ListEmptyComponent={
+              <View style={{ padding: wp(5), alignItems: 'center' }}>
+                <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
+                  No orders found.
+                </Text>
+              </View>
+            }
+          />
+        )}
+      </View>
     </GestureHandlerRootView>
   );
 };
@@ -277,8 +262,7 @@ const OrdersScreen = () => {
 const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
-    marginHorizontal: wp(5),
-    marginTop: hp(2),
+    marginHorizontal: wp(1),
     marginBottom: hp(1),
     borderBottomColor: '#ddd',
   },
@@ -305,6 +289,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     marginBottom: wp(3),
+    marginHorizontal: wp(3),
   },
   iconContainer: {
     marginRight: wp(4),
