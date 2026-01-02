@@ -32,7 +32,7 @@ const uploadRegisterDocs = ({ route }) => {
   // const userDatas = userDatas ? userDatas : null
   useFocusEffect(
     React.useCallback(() => {
-
+// Alert.alert("TE4ST",JSON.stringify(userDatas));
       if (showBackArrow) return;
       const onBackPress = () => {
         showToast("Back button disabled on this screen");
@@ -58,6 +58,7 @@ const uploadRegisterDocs = ({ route }) => {
   const [deleteKey, setDeleteKey] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   useEffect(() => {
+
     if (!siteDetails?.media_url) return;
   }, [siteDetails]);
   const showToast = (msg) => {
@@ -182,9 +183,8 @@ const uploadRegisterDocs = ({ route }) => {
       const res = await axios.post(
         'https://bringesse.com:3001/driver/fileupload',
         formData,
-        { headers: {driver_id: userDatas?.driver_id } }
+        { headers: { driver_id: userDatas?.driver_id } }
       );
-      console.log(res, 'Upload Response');
       if (res.data?.status === 'true') {
         await fnUpdateDocuments(res.data);
         // Mark uploaded
@@ -196,7 +196,14 @@ const uploadRegisterDocs = ({ route }) => {
         setDocs(updatedDocs);
 
         showMessage({ message: "Upload Complete", type: 'success' });
-      } else showToast(res.data?.message || 'Upload failed');
+      } else {
+        showToast(res.data?.message || 'Upload failed')
+        await AsyncStorage.clear();
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'login-screen' }],
+        });
+      };
     } catch (err) {
       console.log(err);
       showToast("Upload failed");
@@ -218,10 +225,12 @@ const uploadRegisterDocs = ({ route }) => {
       vehicle_rc: responseData.vehicle_rc || userDatas.vehicle_rc || '',
       insurance: responseData.insurance || userDatas.insurance || '',
     };
+    console.log("Update Profile payload", payload);
     const data = await fetchData('updateprofile', 'PATCH', payload, {
       driver_id: userDatas?.driver_id,
       device_id: await DeviceInfo.getUniqueId(),
     });
+    // Alert.alert("Update Profile payload",JSON.stringify(data));  
     console.log("Update Profile Response", data);
     if (data?.status === 'true') {
       showMessage({ message: 'Profile updated successfully!', type: 'success' });
@@ -230,10 +239,14 @@ const uploadRegisterDocs = ({ route }) => {
         index: 0,
         routes: [{ name: 'login-screen' }],
       });
-
-
-    } else console.log("Update Error", data);
-
+    } else {
+      showMessage({ message: 'Profile updated successfully!', type: 'danger' });
+      await AsyncStorage.clear(); 
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'login-screen' }],
+      });
+    }
     return data;
   };
 
@@ -289,7 +302,7 @@ const uploadRegisterDocs = ({ route }) => {
     );
   };
   return (
-    <View style={{flex:1,backgroundColor:COLORS[theme].background}}>
+    <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
       <HeaderBar title={"Upload Documents"} showBackArrow={showBackArrow} />
       <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.container]}>

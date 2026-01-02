@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  ActivityIndicator, RefreshControl
+  ActivityIndicator, RefreshControl,
+  BackHandler,
+  Alert
 } from 'react-native';
 import {
   GestureHandlerRootView,
@@ -19,6 +21,8 @@ import { useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import messaging from '@react-native-firebase/messaging';
+import StoreLocation from './StoreLocation';
+import { set } from 'lodash';
 
 const OrdersScreen = () => {
   const { theme } = useTheme();
@@ -29,7 +33,7 @@ const OrdersScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const profile = useSelector(state => state.Auth.profile);
-
+  const [ShowStoreLocation, setShowStoreLocation] = useState(null);
   // FCM listener
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async () => fetchOrders());
@@ -53,7 +57,6 @@ const OrdersScreen = () => {
         return 'clipboard-text';
     }
   };
-
   const formatDateTime = (input) => {
     try {
       const date = new Date(input);
@@ -99,14 +102,33 @@ const OrdersScreen = () => {
   }, [profile?.driver_id]);
 
   useEffect(() => {
-    fetchOrders();
+    // Function to handle back button press
+    const backAction = () => {
+      setShowStoreLocation(null);
+      return true; // Prevent default behavior
+    };
+    // Add event listener
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    // Clean up
+    return () => backHandler.remove();
   }, []);
 
+  useEffect(() => {
+    fetchOrders(); // initial call
+    const interval = setInterval(() => {
+      // fetchOrders();
+    }, 5000); // 3 seconds
+
+    return () => clearInterval(interval); // cleanup
+  }, []);
   const onRefresh = () => {
     setRefreshing(true);
     fetchOrders();
   };
-
   const onSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX > 80) {
       setActiveTab('Ongoing');
@@ -122,80 +144,220 @@ const OrdersScreen = () => {
   const renderItem = ({ item }) => {
     const store = item?.store;
     const address = item?.deliveryAddress;
+
     return (
       <TouchableOpacity
-        disabled={item.status !== 'shipped'}
+        activeOpacity={0.9}
         onPress={() =>
-          item.status === 'shipped' &&
-          navigation.navigate('BookingProductAction', {
-            bid: item?.orderId,
-            acceptStatus: null,
-            data: item,
-            uId: item?.orderId
-          })
+          item?.status === 'accept'
+            ? setShowStoreLocation(item?.store)
+            : item.status === 'shipped' &&
+            navigation.navigate('BookingProductAction', {
+              bid: item?.orderId,
+              acceptStatus: null,
+              data: item,
+              uId: item?.orderId,
+            })
         }
-        style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}
+        style={{
+          backgroundColor: COLORS[theme].viewBackground,
+          marginBottom: hp(1.8),
+          borderRadius: wp(4),
+          padding: wp(3.5),
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 3 },
+          flexDirection: 'row', width: wp(95),alignSelf:"center"
+        }}
       >
-        <View style={styles.iconContainer}>
+        {/* LEFT ICON SECTION */}
+        <View
+          style={{
+            width: wp(14),
+            height: wp(14),
+            borderRadius: wp(7),
+            backgroundColor: COLORS[theme].accent + '20',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: wp(3),
+          }}
+        >
           <MaterialCommunityIcon
             name={getIconName(item.orderStatus)}
             size={wp(7)}
             color={COLORS[theme].accent}
           />
         </View>
-        <View style={styles.textContainer}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary }]}>
+
+        {/* RIGHT CONTENT */}
+        <View style={{ flex: 1 }}>
+          {/* HEADER */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={[
+                poppins.semi_bold.h7,
+                { color: COLORS[theme].textPrimary, flex: 1 },
+              ]}
+              numberOfLines={1}
+            >
               {store?.name || 'Store'}
             </Text>
-            <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
-              #{item?.uniqueId || '----'}
+
+
+          </View>
+
+          {/* ADDRESS */}
+          <Text
+            style={[
+              poppins.regular.h9,
+              {
+                color: COLORS[theme].textPrimary,
+                marginTop: wp(1),
+              },
+            ]}
+            numberOfLines={2}
+          >
+            📍 {address?.location || 'No address'}
+          </Text>
+
+          {/* STATUS BADGE */}
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              marginTop: wp(1.2),
+              backgroundColor:
+                item?.status === 'shipped'
+                  ? '#4CAF5020'
+                  : item?.status === 'accept'
+                    ? '#FF980020'
+                    : '#99999920',
+              paddingHorizontal: wp(2.5),
+              paddingVertical: wp(0.6),
+              borderRadius: wp(3),
+            }}
+          >
+            <Text
+              style={[
+                poppins.regular.h8,
+                {
+                  color: COLORS[theme].textPrimary,
+                  textTransform: 'capitalize',
+                },
+              ]}
+            >
+              {item?.status}
             </Text>
           </View>
 
-          <Text style={[poppins.regular.h9, { color: COLORS[theme].textPrimary }]}>
-            {address?.location || 'No address'}
+          {/* DATE */}
+          <Text
+            style={[
+              poppins.regular.h9,
+              {
+                marginTop: wp(1),
+                color: COLORS[theme].textPrimary,
+              },
+            ]}
+          >
+            🕒 {formatDateTime(item.createdAt)}
           </Text>
 
-          <Text style={[poppins.regular.h8, { marginTop: wp(1), color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
-            {item?.status}
-          </Text>
-
-          <Text style={[poppins.regular.h8, { marginTop: wp(1.5), color: COLORS[theme].textPrimary }]}>
-            {formatDateTime(item.createdAt)}
-          </Text>
-
-          {item.status !== "complete" && (
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={[poppins.regular.h5, { color: COLORS[theme].textPrimary }]}>
-                OTP : {item?.otp || "----"}
-              </Text>
-              <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary }]}>
-                Rs {item?.total?.toFixed(2)}
-              </Text>
-            </View>
-          )}
-          {item?.status === 'shipped' && (
+          {/* OTP & PRICE */}
+          {item.status !== 'complete' && (
             <View
               style={{
-                width: wp(25),
-                height: hp(3.6),
-                alignItems: "center",
-                backgroundColor: COLORS[theme].accent,
-                padding: wp(2),
-                borderRadius: wp(2),
-                alignSelf: "flex-end"
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginTop: wp(2),
+                alignItems: 'center',
               }}
             >
-              <Text style={[poppins.semi_bold.h6, { color: "#FFF" ,lineHeight:wp(4.5)}]}>
-                View
+              <Text
+                style={[
+                  poppins.semi_bold.h6,
+                  { color: COLORS[theme].textPrimary },
+                ]}
+              >
+                OTP: {item?.otp || '----'}
+              </Text>
+
+              <Text
+                style={[
+                  poppins.semi_bold.h7,
+                  { color: COLORS[theme].accent },
+                ]}
+              >
+                ₹ {item?.total?.toFixed(2)}
               </Text>
             </View>
           )}
+
+          <View style={{
+            flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+            marginTop: wp(2.5),
+          }}>
+            <View
+              style={{
+                backgroundColor: COLORS[theme].accent + '15',
+                paddingHorizontal: wp(2),
+                borderRadius: wp(2),
+                alignItems: "center", height: wp(10), justifyContent: "center"
+              }}
+            >
+              <Text
+                style={[
+                  poppins.semi_bold.h7,
+                  { color: COLORS[theme].accent },
+                ]}
+              >
+                #{item?.uniqueId || '----'}
+              </Text>
+            </View>
+            {(item?.status === 'shipped' || item?.status === 'accept') && (
+              <TouchableOpacity
+                onPress={() =>
+                  item?.status === 'accept'
+                    ? setShowStoreLocation(item?.store)
+                    : navigation.navigate('BookingProductAction', {
+                      bid: item?.orderId,
+                      acceptStatus: null,
+                      data: item,
+                      uId: item?.orderId,
+                    })
+                }
+                style={{
+                  alignSelf: 'flex-end',
+                  backgroundColor: COLORS[theme].accent,
+                  paddingHorizontal: wp(4),
+                  paddingVertical: wp(1.2),
+                  borderRadius: wp(3),
+                  elevation: 2,
+                }}
+              >
+                <Text
+                  style={[
+                    poppins.semi_bold.h7,
+                    { color: '#FFF' },
+                  ]}
+                >
+                  {item?.status === 'accept' ? 'Store' : 'View'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
   };
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -228,6 +390,7 @@ const OrdersScreen = () => {
             ))}
           </View>
         </PanGestureHandler>
+        <StoreLocation userstatus={ShowStoreLocation} close={() => setShowStoreLocation(null)} />
         {loading ? (
           <View style={styles.loader}>
             <ActivityIndicator size="large" color={COLORS[theme].accent} />

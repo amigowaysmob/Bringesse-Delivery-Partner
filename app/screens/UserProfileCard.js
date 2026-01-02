@@ -36,7 +36,6 @@ const UserProfileCard = () => {
 
   const [imageLoading, setImageLoading] = useState(true);
 
-  /* ---------------- Navigation ---------------- */
   const handleEditProfilePic = useCallback(() => {
     navigation.navigate('UpdateProfilePic');
   }, []);
@@ -48,17 +47,13 @@ const UserProfileCard = () => {
   /* ---------------- Animations ---------------- */
   const imageScale = useRef(new Animated.Value(0.8)).current;
   const imageOpacity = useRef(new Animated.Value(0)).current;
-
   const nameTranslateY = useRef(new Animated.Value(10)).current;
   const nameOpacity = useRef(new Animated.Value(0)).current;
-
   const btnTranslateY = useRef(new Animated.Value(10)).current;
   const btnOpacity = useRef(new Animated.Value(0)).current;
-
   const arrowTranslateX = useRef(new Animated.Value(15)).current;
   const arrowOpacity = useRef(new Animated.Value(0)).current;
 
-  /* ---------------- Focus animation ---------------- */
   useFocusEffect(
     useCallback(() => {
       imageScale.setValue(0.8);
@@ -70,11 +65,11 @@ const UserProfileCard = () => {
       arrowTranslateX.setValue(15);
       arrowOpacity.setValue(0);
 
-      Animated.stagger(250, [
+      Animated.stagger(200, [
         Animated.parallel([
           Animated.timing(imageOpacity, {
             toValue: 1,
-            duration: 500,
+            duration: 450,
             useNativeDriver: true,
           }),
           Animated.spring(imageScale, {
@@ -86,36 +81,36 @@ const UserProfileCard = () => {
         Animated.parallel([
           Animated.timing(nameOpacity, {
             toValue: 1,
-            duration: 500,
+            duration: 400,
             useNativeDriver: true,
           }),
           Animated.timing(nameTranslateY, {
             toValue: 0,
-            duration: 500,
+            duration: 400,
             useNativeDriver: true,
           }),
         ]),
         Animated.parallel([
           Animated.timing(btnOpacity, {
             toValue: 1,
-            duration: 500,
+            duration: 400,
             useNativeDriver: true,
           }),
           Animated.timing(btnTranslateY, {
             toValue: 0,
-            duration: 500,
+            duration: 400,
             useNativeDriver: true,
           }),
         ]),
         Animated.parallel([
           Animated.timing(arrowOpacity, {
             toValue: 1,
-            duration: 500,
+            duration: 400,
             useNativeDriver: true,
           }),
           Animated.timing(arrowTranslateX, {
             toValue: 0,
-            duration: 500,
+            duration: 400,
             useNativeDriver: true,
           }),
         ]),
@@ -129,47 +124,53 @@ const UserProfileCard = () => {
         style={[
           styles.card,
           {
-            backgroundColor: COLORS[theme].background,
-            borderColor: COLORS[theme].border || '#ccc',
+            backgroundColor: COLORS[theme].viewBackground,
+            borderColor: COLORS[theme].accent ,
           },
         ]}
       >
-        {/* Profile Image */}
         <TouchableOpacity
           onPress={handleEditProfilePic}
           activeOpacity={0.8}
           style={styles.imageContainer}
         >
-          <Animated.View
+          <View
             style={{
-              opacity: imageOpacity,
-              transform: [{ scale: imageScale }],
+              padding: wp(1),
+              borderRadius: wp(10),
+              backgroundColor: COLORS[theme].accent + '20',
             }}
           >
-            {imageUri ? (
-              <>
-                {imageLoading && (
-                  <View style={styles.loader}>
-                    <ActivityIndicator color={COLORS[theme].accent} />
-                  </View>
-                )}
-
-                <Animated.Image
-                  source={{ uri: imageUri }}
-                  onLoadEnd={() => setImageLoading(false)}
-                  style={styles.profileImage}
-                />
-              </>
-            ) : (
-              <View style={styles.placeholder}>
-                <MaterialCommunityIcon
-                  name="account"
-                  size={wp(10)}
-                  color={COLORS[theme].textSecondary}
-                />
-              </View>
-            )}
-          </Animated.View>
+            <Animated.View
+              style={{
+                opacity: imageOpacity,
+                transform: [{ scale: imageScale }],
+              }}
+            >
+              {imageUri ? (
+                <>
+                  {imageLoading && (
+                    <View style={styles.loader}>
+                      <ActivityIndicator color={COLORS[theme].accent} />
+                    </View>
+                  )}
+                  <Animated.Image
+                    source={{ uri: imageUri }}
+                    onLoadEnd={() => setImageLoading(false)}
+                    style={styles.profileImage}
+                  />
+                </>
+              ) : (
+                <View style={styles.placeholder}>
+                  <MaterialCommunityIcon
+                    name="account"
+                    size={wp(10)}
+                    color={COLORS[theme].textSecondary}
+                  />
+                </View>
+              )}
+            </Animated.View>
+          </View>
 
           <MaterialCommunityIcon
             name="pencil-circle"
@@ -179,7 +180,7 @@ const UserProfileCard = () => {
           />
         </TouchableOpacity>
 
-        {/* User Info */}
+        {/* Info */}
         <View style={styles.infoContainer}>
           <Animated.Text
             numberOfLines={1}
@@ -187,7 +188,7 @@ const UserProfileCard = () => {
               poppins.semi_bold.h7,
               styles.userName,
               {
-                color: COLORS[theme].primary,
+                color: COLORS[theme].textPrimary,
                 opacity: nameOpacity,
                 transform: [{ translateY: nameTranslateY }],
               },
@@ -207,13 +208,16 @@ const UserProfileCard = () => {
               activeOpacity={0.85}
               style={[
                 styles.editButton,
-                { borderColor: COLORS[theme].buttonBg },
+                {
+                  backgroundColor: COLORS[theme].accent + '15',
+                  borderColor: COLORS[theme].accent,
+                },
               ]}
             >
               <Text
                 style={[
                   poppins.regular.h8,
-                  { color: COLORS[theme].buttonBg },
+                  { color: COLORS[theme].accent },
                 ]}
               >
                 {t('Edit Profile')}
@@ -230,9 +234,9 @@ const UserProfileCard = () => {
           }}
         >
           <MaterialCommunityIcon
-            name="menu-right"
+            name="chevron-right"
             size={wp(8)}
-            color={COLORS[theme].textPrimary}
+            color={COLORS[theme].textSecondary}
           />
         </Animated.View>
       </View>
@@ -249,11 +253,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: wp(4),
     paddingHorizontal: wp(4),
-    borderRadius: wp(3),
-    borderWidth: 0.6,
+    borderRadius: wp(4),
+    borderWidth: 0.8,
     marginHorizontal: wp(4),
     marginVertical: wp(1.5),
-    elevation: 4,
+    elevation: 5,
   },
   imageContainer: {
     position: 'relative',
@@ -291,9 +295,9 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   editButton: {
-    paddingVertical: wp(0.8),
-    paddingHorizontal: wp(3),
-    borderRadius: wp(2),
+    paddingVertical: wp(1),
+    paddingHorizontal: wp(3.5),
+    borderRadius: wp(3),
     borderWidth: 1,
     alignSelf: 'flex-start',
   },

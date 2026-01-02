@@ -78,6 +78,7 @@ const PendingHistory = () => {
     });
     return unsubscribe;
   }, [fetchPendingRequest]);
+  
   useEffect(() => {
     fetchPendingRequest();
   }, [fetchPendingRequest]);
@@ -176,15 +177,18 @@ const PendingHistory = () => {
               Drop: {item.dropLocation}
             </Text>
           )}
-
           <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
             Distance: {distanceKM} km
           </Text>
-
           <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
             Status: {item.booking_status}
           </Text>
-
+          {
+            item?.driver_fare != "" &&
+            <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary }]}>
+              Driver Fare: {item?.driver_fare}
+            </Text>
+          }
           {reqDate && (
             <Text style={[poppins.regular.h7, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
               {reqDate}
@@ -204,7 +208,6 @@ const PendingHistory = () => {
       </View>
     );
   };
-
   // -----------------------------------------------------------------------
   // MAIN UI
   // -----------------------------------------------------------------------

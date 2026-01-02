@@ -1,29 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  BackHandler,
-  Linking,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  StatusBar,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  ToastAndroid,
-  Dimensions,
-  NativeEventEmitter,
-  NativeModules,
+  Alert, BackHandler, Linking, Platform, StyleSheet, Text, TextInput, View, StatusBar, TouchableOpacity,
+  Image, ActivityIndicator, ToastAndroid,
+  Dimensions, NativeEventEmitter, NativeModules,
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { EventType } from '@notifee/react-native';
 import { PermissionsAndroid } from 'react-native';
 import {
-  SafeAreaProvider,
-  SafeAreaView,
-  useSafeAreaInsets,
+  SafeAreaProvider, SafeAreaView, useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import { Provider, useSelector } from 'react-redux';
@@ -172,14 +157,13 @@ function App(): React.JSX.Element {
     });
     return unsubscribeBackground;
   }, []);
-
   // FOREGROUND notifications
   useEffect(() => {
     checkPushNotificationPermission();
 
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       const data = remoteMessage?.data || {};
-      if (data.scope === 'new_booking') {
+      if (data.scope === 'new_booking' || data.scope === 'new_order') {
         await AsyncStorage.setItem('NOTIFICATION_DATA', JSON.stringify(data));
         setNotificationData(data);
         await onDisplayNotification({
@@ -257,7 +241,6 @@ function App(): React.JSX.Element {
 }
 const MainApp = ({ notificationData, clearNotification }: { notificationData: any; clearNotification: () => void }) => {
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
   const currentTheme = isDark ? darkTheme : lightTheme;
   const profile = useSelector((state: any) => state.Auth?.profile);
@@ -332,6 +315,10 @@ const MainApp = ({ notificationData, clearNotification }: { notificationData: an
                       <Text style={styles.label}>Drop:</Text>
                       <Text style={styles.value}>{notificationData?.dropLocation}</Text>
                     </>}
+                    {notificationData?.driver_fare && <>
+                      <Text style={styles.label}>Driver Fare:</Text>
+                      <Text style={styles.value}>{notificationData?.driver_fare}</Text>
+                    </>}
                     {loading ? <ActivityIndicator size="small" color="#fff" style={{ marginTop: hp(1.5) }} /> :
                       <View style={styles.buttonRow}>
                         <TouchableOpacity style={[styles.button, styles.rejectButton]} onPress={handleReject}>
@@ -374,5 +361,4 @@ const styles = StyleSheet.create({
   rejectButton: { backgroundColor: '#fff' },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: wp(4) },
 });
-
 export default App;

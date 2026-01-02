@@ -163,7 +163,7 @@ const UserProfileCard = ({ userstatus }) => {
         {/* Remaining Calls */}
         <View style={[styles.infoBox, { backgroundColor: COLORS[theme].accent }]}>
           {loadingRemaining ? (
-            <ActivityIndicator color={COLORS[theme].white} size="small" />
+            <ActivityIndicator color={COLORS[theme].white} size={wp(6)} />
           ) : (
             <>
               <Text style={[poppins.medium.h8, { color: COLORS[theme].white }]}>

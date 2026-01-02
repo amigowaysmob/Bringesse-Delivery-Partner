@@ -86,7 +86,7 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                 return;
             }
             setIsOnline(data?.live_status ? true : false);
-        
+
             dispatch({
                 type: 'PROFILE_DETAILS',
                 payload: data,
@@ -118,8 +118,8 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                 driver_id: profile.driver_id,
                 device_id: deviceId,
             });
-                // console.log(data,"UPDATE_PROFILE")
-                // Alert.alert(JSON.stringify(data))
+            // console.log(data,"UPDATE_PROFILE")
+            // Alert.alert(JSON.stringify(data))
             // Alert.alert(JSON.stringify(data))
             if (!data?.ok && data?.status == 'false') {
                 await AsyncStorage.clear();
@@ -147,7 +147,8 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
     // Alert.alert(profileDetails?.subscription_status)
     return (
         <View style={[styles.card, { backgroundColor: COLORS[theme].background }]}>
-            {(profileDetails?.partner_type.includes('Transport') &&
+            {(
+                profileDetails?.partner_type?.includes('Transport') &&
                 profileDetails?.subscription_status == 0) ? (
                 <>
                     <Text style={[poppins.semi_bold.h6, styles.statusText, { color: COLORS[theme].primary }]}>
@@ -177,7 +178,7 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
 
                     <View style={styles.switchContainer}>
                         {loading ? (
-                            <ActivityIndicator size="small" color={COLORS[theme].accent} />
+                            <ActivityIndicator size={wp(4)} color={COLORS[theme].accent} />
                         ) : (
                             <Switch
                                 trackColor={{ false: "#999", true: COLORS[theme].accent + '50' }}

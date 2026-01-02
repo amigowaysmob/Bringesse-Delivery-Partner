@@ -74,7 +74,6 @@ const BookingCompleted = ({ route }) => {
       </View>
     );
   }
-
   const {
     customer,
     uniqueId,
@@ -106,7 +105,7 @@ const BookingCompleted = ({ route }) => {
           <Text style={[poppins.semi_bold.h5, { color: COLORS[theme].textPrimary, marginBottom: hp(1) }]}>
             {t('Booking ID')}: <Text style={{ color: COLORS[theme].accent }}>{uniqueId}</Text>
           </Text>
-
+          {/* <Text>{JSON.stringify(bookingDetails, null, 2)}</Text> */}
           {/* Status */}
           <View style={[styles.statusBadge, { backgroundColor: bookingStatus === 'completed' ? '#28a745' : COLORS[theme].accent }]}>
             <MaterialCommunityIcon
@@ -150,7 +149,6 @@ const BookingCompleted = ({ route }) => {
               );
             })}
           </View>
-
           {/* Customer Info */}
           <View style={styles.section}>
             <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].textPrimary, marginBottom: hp(1) }]}>Customer</Text>
@@ -204,7 +202,7 @@ const BookingCompleted = ({ route }) => {
 
           {/* Booking Date */}
           <View style={styles.section}>
-            <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].textPrimary }]}>Created At</Text>
+            <Text style={[poppins.semi_bold.h6, { color: COLORS[theme].textPrimary }]}>Order At</Text>
             <Text style={[poppins.regular.h9, { color: COLORS[theme].textPrimary }]}>{formattedDate}</Text>
           </View>
 

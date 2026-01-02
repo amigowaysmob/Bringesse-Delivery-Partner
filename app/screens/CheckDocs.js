@@ -4,6 +4,7 @@ import { fetchData } from '../api/api';
 import DeviceInfo from 'react-native-device-info';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { ToastAndroid } from 'react-native';
 const CheckDocs = () => {
   const accessToken = useSelector(state => state.Auth?.accessToken);
   const profileDetails = useSelector(state => state.Auth.profileDetails);
@@ -32,6 +33,7 @@ const CheckDocs = () => {
         !data?.aadhar_front  
         && data?.profile_status
       ) {
+        ToastAndroid.show('Please complete your document upload to continue.', ToastAndroid.SHORT);
         return navigation.navigate('UploadDriverDocs', { showBackArrow: false });
       };
     } catch (error) {

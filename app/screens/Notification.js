@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity,
+  View, Text, FlatList, StyleSheet, ActivityIndicator, 
 } from 'react-native';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
@@ -22,6 +22,14 @@ const Notification = () => {
   const { t } = useTranslation();
   const profile = useSelector(state => state.Auth.profile);
   const accessToken = useSelector(state => state.Auth.accessToken);
+  const [expandedIds, setExpandedIds] = useState([]);
+  const toggleExpand = (id) => {
+    setExpandedIds(prev =>
+      prev.includes(id)
+        ? prev.filter(item => item !== id)
+        : [...prev, id]
+    );
+  };
 
   const [notificationData, setNotificationData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -105,34 +113,65 @@ const Notification = () => {
     if (!dateStr) return '';
     return moment(dateStr).fromNow(); // e.g., "2 hours ago"
   };
-
   const renderItem = ({ item }) => {
+    const isExpanded = expandedIds.includes(item.notification_id);
     return (
       <View style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}>
         <View style={styles.iconContainer}>
           <MaterialCommunityIcon
-            name={item?.notification_type == "booking" ? "truck" : "bell-ring"}
+            name="bell-ring"
             size={wp(7)}
             color={COLORS[theme].accent}
           />
         </View>
         <View style={styles.textContainer}>
-          <Text style={[poppins.semi_bold.h7, { color: COLORS[theme].textPrimary,textTransform:"capitalize" }]}>
-            {item.notification_type}
+          <Text
+            style={[
+              poppins.semi_bold.h7,
+              { color: COLORS[theme].textPrimary, textTransform: 'capitalize' },
+            ]}
+          >
+            {item?.notification_type}
           </Text>
 
-          <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
+          {/* MESSAGE */}
+          <Text
+            style={[
+              poppins.regular.h8,
+              { color: COLORS[theme].textPrimary, marginTop: wp(1) },
+            ]}
+            numberOfLines={isExpanded ? undefined : 2}
+          >
             {item.message || 'You have a new notification.'}
           </Text>
+          {/* TOGGLE */}
+          {item?.message?.length > 80 && (
+            <Text
+              onPress={() => toggleExpand(item.notification_id)}
+              style={{
+                color: COLORS[theme].accent,
+                marginTop: wp(1),
+                fontSize: wp(3.5),
+              }}
+            >
+              {isExpanded ? 'Show Less' : 'Show More'}
+            </Text>
+          )}
 
-          <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1.5) }]}>
+          {/* DATE */}
+          <Text
+            style={[
+              poppins.regular.h8,
+              { color: COLORS[theme].textPrimary, marginTop: wp(1.5) },
+            ]}
+          >
             {formatDate(item.date)}
           </Text>
         </View>
-     
       </View>
     );
   };
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -144,8 +183,9 @@ const Notification = () => {
           </View>
         ) : (
           <FlatList
+
             data={notificationData}
-            keyExtractor={(item, index) => item.notification_id?.toString() || index.toString()}
+            keyExtractor={(item, index) => index.toString()}
             renderItem={({ item }) => renderItem({ item, navigation })}
             contentContainerStyle={styles.scrollContent}
             onEndReached={handleLoadMore}
@@ -167,36 +207,18 @@ const Notification = () => {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingVertical: hp(2),
-    paddingBottom: hp(5),
-    gap: wp(3),
-    marginHorizontal: wp(3),
+    paddingBottom: hp(5), gap: wp(3), marginHorizontal: wp(3),
+  }, card: {
+    flexDirection: 'row', padding: wp(4), borderRadius: wp(2), elevation: 2, shadowColor: '#000',
+    shadowOpacity: 0.1, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4,
+  }, iconContainer: {
+    marginRight: wp(4), justifyContent: 'center',
   },
-  card: {
-    flexDirection: 'row',
-    padding: wp(4),
-    borderRadius: wp(2),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    // marginBottom: wp(1),
-  },
-  iconContainer: {
-    marginRight: wp(4),
-    justifyContent: 'center',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  textContainer: { flex: 1, }, loader: {
+    flex: 1, justifyContent: 'center', alignItems: 'center',
   },
   footerLoader: {
-    paddingVertical: hp(2),
-    alignItems: 'center',
+    paddingVertical: hp(2), alignItems: 'center',
   },
 });
 export default Notification;

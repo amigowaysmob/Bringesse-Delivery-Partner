@@ -10,6 +10,8 @@ import { fetchData } from '../api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import messaging from '@react-native-firebase/messaging';
+
 const UserDeliveryOrdersCount = ({ profileStatus, addressCurrent, location, notificationData }) => {
     const [loading, setLoading] = useState(false);
     const [count, setCount] = useState(0);
@@ -20,6 +22,15 @@ const UserDeliveryOrdersCount = ({ profileStatus, addressCurrent, location, noti
     const profileDetails = useSelector(state => state.Auth.profileDetails);
     const accessToken = useSelector(state => state.Auth.accessToken);
     const navigation = useNavigation();
+    useEffect(() => {
+        const unsubscribe = messaging().onMessage(async remoteMessage => {
+            // Alert.alert('New Delivery Order', 'You have a new delivery order. Please check your pending orders.');
+            toggleSwitch();
+        });
+        return unsubscribe;
+      }, []);
+
+
     // Badge pop animation
     const scaleAnim = useRef(new Animated.Value(1)).current;
     // Heartbeat animation for loader
@@ -81,7 +92,6 @@ const UserDeliveryOrdersCount = ({ profileStatus, addressCurrent, location, noti
                     Animated.timing(scaleAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
                 ]).start();
             }
-
             setPrevCount(count);
             setCount(newCount);
         } catch (error) {
@@ -92,10 +102,11 @@ const UserDeliveryOrdersCount = ({ profileStatus, addressCurrent, location, noti
     };
     // Trigger API every 3 seconds
     useEffect(() => {
-        const interval = setInterval(toggleSwitch, 3000);
+        const interval = setInterval(toggleSwitch, 4000);
         return () => clearInterval(interval);
     }, [notificationData]);
     // Trigger on location/address change
+
     useEffect(() => {
         toggleSwitch();
     }, [addressCurrent, location]);

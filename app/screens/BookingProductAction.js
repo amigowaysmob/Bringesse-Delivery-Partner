@@ -8,7 +8,7 @@ import {
   Image,
   TouchableOpacity,
   Linking,
-  Alert,
+  BackHandler,
 } from "react-native";
 import { hp, wp } from "../resources/dimensions";
 import { COLORS } from "../resources/colors";
@@ -18,15 +18,14 @@ import { useTranslation } from "react-i18next";
 import HeaderBar from "../components/header";
 import { useSelector } from "react-redux";
 import { fetchData } from "../api/api";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import Geolocation from "react-native-geolocation-service";
 import polyline from "@mapbox/polyline";
 import MaterialCommunityIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import BookingConfirmModal from "./BookingConfirmModal";
-
+import { poppins } from "../resources/fonts";
 const GOOGLE_MAPS_APIKEY = "AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc";
-
 const BookingAction = ({ route }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -102,7 +101,20 @@ const BookingAction = ({ route }) => {
       console.log("Location update failed", err);
     }
   };
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
 
+      return () => subscription.remove();
+    }, [])
+  );
   // ---------------- FETCH ROUTE ----------------
   const fetchRoute = async (origin, destination) => {
     if (!origin || !destination) return [];
@@ -120,9 +132,9 @@ const BookingAction = ({ route }) => {
     }
     return [];
   };
-
   // ---------------- INITIALIZE ----------------
   useEffect(() => {
+    console.log(data, "data in booking action");
     let interval;
     const init = async () => {
       try {
@@ -189,7 +201,7 @@ const BookingAction = ({ route }) => {
     if (!phoneNumber) return;
     Linking.openURL(`tel:${phoneNumber}`);
   };
-  
+
   if (!currentLoc) {
     return (
       <View style={styles.center}>
@@ -204,11 +216,9 @@ const BookingAction = ({ route }) => {
 
   const d = bookingDetails?.deliveryAddress;
   const customer = bookingDetails?.user;
-
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
-      <HeaderBar title={t("Booking")} showBackArrow />
-
+      <HeaderBar title={t("Booking")} showBackArrow ={true}/>
       {/* MAP */}
       <MapView
         ref={mapRef}
@@ -251,7 +261,6 @@ const BookingAction = ({ route }) => {
           />
         )}
       </MapView>
-
       {/* BOTTOM CARD */}
       <View style={[styles.card, { backgroundColor: COLORS[theme].cardBackground }]}>
         <View style={styles.rowSpace}>
@@ -269,9 +278,13 @@ const BookingAction = ({ route }) => {
             <Text style={[styles.customerText, { color: COLORS[theme].textPrimary }]}>
               {customer?.contactNo ?? "N/A"}
             </Text>
+            <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary ,maxWidth:wp(60)}]}>
+              {bookingDetails?.deliveryAddress?.location ?? "N/A"}
+            </Text>
+
           </View>
           <TouchableOpacity onPress={() => makeCall(customer?.contactNo)} style={styles.whatsappBtn}>
-            <MaterialCommunityIcon name="whatsapp" size={wp(10)} color="#25D366" />
+            <MaterialCommunityIcon name="phone" size={wp(10)} color="#25D366" />
           </TouchableOpacity>
         </TouchableOpacity>
 
@@ -318,6 +331,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
+    borderWidth:wp(0.5),borderColor:'#ccc'
   },
   rowSpace: { flexDirection: "row", justifyContent: "space-between", marginBottom: hp(1) },
   statusText: { fontSize: wp(4), fontWeight: "bold" },

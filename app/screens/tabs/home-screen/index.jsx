@@ -26,6 +26,7 @@ import CheckDocs from '../../CheckDocs';
 import UserPendingCount from '../../UserPendingCount';
 import UserDeliveryOrdersCount from '../../UserDeliveryOrdersCount copy';
 import WelcomeCard from '../../WelcomeCard';
+import CheckPaymentId from '../../CheckPaymentId';
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 const HomeScreen = () => {
   const { theme } = useTheme();
@@ -43,18 +44,20 @@ const HomeScreen = () => {
   const siteDetails = useSelector(state => state.Auth?.siteDetails);
   const navigation = useNavigation();
   // Ask for location permission
+
   const requestLocationPermission = async () => {
+    Alert.alert(JSON.parse(JSON.parse(profile?.driver_id)));
     if (Platform.OS === 'ios') return true;
     try {
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        PermissionsAndroid?.PERMISSIONS?.ACCESS_FINE_LOCATION,
         {
           title: 'Location Permission',
           message: 'App needs access to your location.',
           buttonPositive: 'OK',
         }
       );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
+      return granted === PermissionsAndroid?.RESULTS.GRANTED;
     } catch (err) {
       console.warn('Permission error:', err);
       return false;
@@ -62,16 +65,17 @@ const HomeScreen = () => {
   };
   // Get user’s current location
   const getLocation = async () => {
-    const hasPermission = await requestLocationPermission();
-    if (!hasPermission) {
-      Alert.alert('Permission Denied', 'Location permission is required.');
-      return;
-    }
+    // const hasPermission = await requestLocationPermission();
+    // if (!hasPermission) {
+    //   Alert.alert('Permission Denied', 'Location permission is required.');
+    //   return;
+    // }
     Geolocation.getCurrentPosition(
       async position => {
         const { latitude, longitude } = position.coords;
+        // Alert.alert(`Lat: ${latitude}, Lon: ${longitude}`);
         setLocation({ latitude, longitude });
-
+        
         // Get address from coordinates
         await getAddressFromCoordinates(latitude, longitude);
       },
@@ -189,7 +193,8 @@ const HomeScreen = () => {
     }
   };
   return (
-    <View style={[styles.container, { backgroundColor: COLORS[theme].background ,
+    <View style={[styles.container, {
+      backgroundColor: COLORS[theme].background,
     }]}>
       <UserPendingCount
         notificationData={notificationData}
@@ -210,8 +215,8 @@ const HomeScreen = () => {
           ref={mapRef}
           style={[styles.map]}
           initialRegion={{
-            latitude: location.latitude,
-            longitude: location.longitude,
+            latitude: location?.latitude,
+            longitude: location?.longitude,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           }}
@@ -230,7 +235,7 @@ const HomeScreen = () => {
                   backgroundColor: 'yellow',
                   color: '#000',
                   padding: wp(0.5),
-                  borderWidth: wp(0.3),borderRadius:wp(1)
+                  borderWidth: wp(0.3), borderRadius: wp(1)
                 },
               ]}
             >
@@ -249,13 +254,14 @@ const HomeScreen = () => {
       </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: hp(1), width: '100%' }}>
         <UerProfileCard userstatus={profileDetails?.live_status} />
-        <Text style={{color:"red"}} >{profileDetails?.welcomeStatus}</Text>
+        <Text style={{ color: "red" }} >{profileDetails?.welcomeStatus}</Text>
         {
           profileDetails?.welcomeStatus == '0' &&
           <WelcomeCard userstatus={profileDetails?.live_status} />
         }
         <VersionUpgradeModal />
         <CheckDocs />
+        <CheckPaymentId />
         <UserawaitStatus userstatus={profileDetails?.profile_status} />
         {profileDetails?.order_assigned == 1 && acceptedBooking?.bId ? (
           <View>

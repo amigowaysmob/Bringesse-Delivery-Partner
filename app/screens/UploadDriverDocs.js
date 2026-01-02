@@ -79,11 +79,8 @@ const UploadDriverDocs = ({ route }) => {
         uploaded: true
       }));
     }
-
     setDocs(updated);
   }, [profileDetails, siteDetails]);
-
-
   const showToast = (msg) => {
     if (Platform.OS === "android") ToastAndroid.show(msg, ToastAndroid.SHORT);
     else Alert.alert(msg);
@@ -214,6 +211,7 @@ const UploadDriverDocs = ({ route }) => {
         // Mark uploaded
         const updatedDocs = { ...docs };
         Object.keys(updatedDocs).forEach(key => {
+          
           if (updatedDocs[key] && key !== 'driver_documents') updatedDocs[key].uploaded = true;
         });
         if (Array.isArray(updatedDocs.driver_documents)) updatedDocs.driver_documents = updatedDocs.driver_documents.map(d => ({ ...d, uploaded: true }));
@@ -280,7 +278,8 @@ const UploadDriverDocs = ({ route }) => {
           {item ? (
             <>
               <Image source={{ uri: item.uri }} style={styles.uploadedImage} />
-              {!showBackArrow &&
+              {
+              !showBackArrow &&
                 <TouchableOpacity style={styles.removeIcon} onPress={() => askDelete(key)}>
                   <Text style={{ color: '#fff', fontWeight: 'bold' }}>×</Text>
                 </TouchableOpacity>}

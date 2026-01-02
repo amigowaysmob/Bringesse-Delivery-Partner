@@ -33,8 +33,8 @@ android {
         applicationId "com.app.bringessedeliverypartner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 49
-        versionName "1.4.0"
+        versionCode 57
+        versionName "1.4.8"
             missingDimensionStrategy 'react-native-camera', 'general'
     }
     // Signing configuration (using debug keystore for both)
@@ -54,15 +54,14 @@ android {
         keyPassword 'bringessedeliverypartner'
         }
     }
-    // Build types
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
       signingConfig signingConfigs.release
-    minifyEnabled true
-    shrinkResources false
+    // minifyEnabled true
+    // shrinkResources false
     proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
@@ -70,17 +69,11 @@ android {
 dependencies {
     // React Native core (version auto-managed)
     implementation("com.facebook.react:react-android")
-
     // Firebase Cloud Messaging
     implementation 'com.google.firebase:firebase-messaging:24.1.0'
-
     // Google Play Services (Location)
     implementation 'com.google.android.gms:play-services-location:21.0.1'
-
-    // Razorpay Payment Gateway
     implementation 'com.razorpay:checkout:1.6.33'
-
-    // JavaScript engine selection
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

@@ -28,8 +28,8 @@ const LoginScreen = () => {
     actions: { APP_REGISTER_LOGIN_API_CALL },
   } = useAuthHoc();
   // State
-  const [email, setEmail] = useState(__DEV__ ? 'shankarram54@gmail.com' : '');
-  const [password, setPassword] = useState(__DEV__ ? '123456789' : '');
+  const [email, setEmail] = useState(__DEV__ ? 'support@amigoways.com' : '');
+  const [password, setPassword] = useState(__DEV__ ? '123456' : '');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -98,9 +98,6 @@ const LoginScreen = () => {
                 description: userDatas?.message,
                 type: 'success',
               });
-              // Navigate
-              // navigation.reset('home-screen');
-              // navigation.navigate('UploadDriverDocs', { showBackArrow: false });
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'home-screen' }],

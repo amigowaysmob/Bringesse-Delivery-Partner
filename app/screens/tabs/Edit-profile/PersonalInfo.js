@@ -391,7 +391,8 @@ const PersonalInfoScreen = () => {
   };
   // Add new handlers for the paymentId and documentType touchable opacity alerts
   const handlePaymentIdPress = () => {
-    navigation.navigate('PaymentDocs')
+    // navigation.navigate('PaymentDocs')
+    navigation.navigate('PaymentDocs', { showBackArrow: true });
     // Alert.alert("Payment ID", "You clicked on Payment ID field.");
   };
   const handleDocumentTypePress = () => {
@@ -399,7 +400,6 @@ const PersonalInfoScreen = () => {
       showBackArrow: true
     })
   };
-
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: COLORS[theme].background }]}

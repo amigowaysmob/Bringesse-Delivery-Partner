@@ -11,6 +11,7 @@ import { hp, wp } from '../../resources/dimensions';
 import { useTheme } from '../../context/ThemeContext';
 import { getAccesstoken, getrefreshtoken, getUserData } from '../../utils/utils';
 import { useAuthHoc } from '../../config/config';
+import LottieView from 'lottie-react-native';
 
 const _ = require('lodash');
 export default function SplashScreen() {
@@ -22,7 +23,7 @@ export default function SplashScreen() {
       APP_SITE_SETTING_API_CALL,
     },
   } = useAuthHoc();
-  
+
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
@@ -59,76 +60,81 @@ export default function SplashScreen() {
   }, []);
 
   useEffect(() => {
-    const initialize = async () => {
-      const userData = await getUserData();
-      const aToken = await getAccesstoken();
-      const refreshToken = await getrefreshtoken();
-      const parsedData = JSON.parse(userData)
-      // console.log(JSON.stringify(parsedData?.aadhar_front));
-      if (parsedData && !_.isEmpty(parsedData) && !parsedData?.aadhar_front && !aToken) {
-        navigation.navigate('uploadRegisterDocs', { showBackArrow: false, userDatas: parsedData });
-        return;
-      }
-      if (!isConnected) {
-        Alert.alert(
-          'No Internet Connection',
-          'Please check your network settings and try again.',
-          [{ text: 'OK', onPress: () => BackHandler.exitApp() }]
-        );
-        return;
-      }
-      // ✅ Call siteSetting API
-      APP_SITE_SETTING_API_CALL({
-        request: {},
-        callback: {
-          successCallback: async (response) => {
-            if (response) {
-              console.log('Site Setting API response:', response);
-              dispatch({
-                type: 'SET_SITE_DETAILS',
-                payload: response?.data?.data,
-              });
-              // Only navigate after API success
-              if (userData && !_.isEmpty(userData) && aToken) {
-                const parsedData = JSON.parse(userData);
+    const timer = setTimeout(() => {
+      const initialize = async () => {
+        const userData = await getUserData();
+        const aToken = await getAccesstoken();
+        const refreshToken = await getrefreshtoken();
+
+        const parsedData = userData ? JSON.parse(userData) : null;
+
+        if (parsedData && !_.isEmpty(parsedData) && !parsedData?.aadhar_front && !aToken) {
+          navigation.navigate('uploadRegisterDocs', {
+            showBackArrow: false,
+            userDatas: parsedData,
+          });
+          return;
+        }
+
+        if (!isConnected) {
+          Alert.alert(
+            'No Internet Connection',
+            'Please check your network settings and try again.',
+            [{ text: 'OK', onPress: () => BackHandler.exitApp() }]
+          );
+          return;
+        }
+
+        APP_SITE_SETTING_API_CALL({
+          request: {},
+          callback: {
+            successCallback: async (response) => {
+              if (response) {
                 dispatch({
-                  type: 'SET_TOKENS',
-                  payload: {
-                    access_token: aToken,
-                    refresh_token: refreshToken,
-                  },
+                  type: 'SET_SITE_DETAILS',
+                  payload: response?.data?.data,
                 });
-                dispatch({
-                  type: 'UPDATE_PROFILE',
-                  payload: parsedData,
-                });
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'home-screen' }],
-                });
-              } else {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'GetStartedScreen' }],
-                });
+
+                if (userData && !_.isEmpty(userData) && aToken) {
+                  dispatch({
+                    type: 'SET_TOKENS',
+                    payload: {
+                      access_token: aToken,
+                      refresh_token: refreshToken,
+                    },
+                  });
+
+                  dispatch({
+                    type: 'UPDATE_PROFILE',
+                    payload: parsedData,
+                  });
+
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'home-screen' }],
+                  });
+                } else {
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'GetStartedScreen' }],
+                  });
+                }
               }
-            }
+            },
+            errorCallback: () => {
+              Alert.alert(
+                'Error',
+                'Unable to load app settings. Please try again later.',
+                [{ text: 'OK', onPress: () => BackHandler.exitApp() }]
+              );
+            },
           },
-          errorCallback: (err) => {
-            console.log('Site Setting API error:', err);
-            Alert.alert(
-              'Error',
-              'Unable to load app settings. Please try again later.',
-              [{ text: 'OK', onPress: () => BackHandler.exitApp() }]
-            );
-          },
-        },
-      });
-    };
-
-    initialize();
+        });
+      };
+      initialize();
+    }, 2000); // ⏱ 3 seconds splash delay
+    return () => clearTimeout(timer);
   }, [isConnected]);
-
 
   return (
     <View style={[styles.container, { backgroundColor: '#fff' }]}>
@@ -137,10 +143,15 @@ export default function SplashScreen() {
         resizeMode="contain"
         source={IMAGE_ASSETS.splash_screen}
       />
+        {/* <LottieView
+          source={IMAGE_ASSETS?.loading}
+          autoPlay
+          loop
+          style={styles.lottie}
+        /> */}
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -150,5 +161,9 @@ const styles = StyleSheet.create({
   splashLogo: {
     height: hp(100),
     width: wp(100),
+  },
+  lottie: {
+    width: wp(80),
+    height: wp(80),
   },
 });

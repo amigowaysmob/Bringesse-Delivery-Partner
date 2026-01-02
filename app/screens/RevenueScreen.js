@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { hp, wp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
 import { COLORS } from '../resources/colors';
@@ -64,15 +64,15 @@ const RevenueScreen = () => {
           driver_id: profile.driver_id,
           device_id: deviceId,
         });
+        // Alert.alert('Session', JSON.stringify(data, null, 2))
         if (!data?.ok && data?.status == 'false') {
-          // Alert.alert('Session Expired', 'Please log in again.', )
           await AsyncStorage.clear();
           navigation.reset({
             index: 0,
             routes: [{ name: 'login-screen' }],
           });
         }
-        console.log('Revenue Data', JSON.stringify(data));
+        // console.log('Revenue Data', JSON.stringify(data));
         setRevenueData(data);
       } catch (error) {
         console.error('Revenue API Error:', error);
@@ -147,7 +147,7 @@ const RevenueScreen = () => {
   `;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, padding: wp(1), backgroundColor: COLORS[theme].background }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
       <HeaderBar title={t('revenue') || 'Revenue'} showBackArrow={true} />
       <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}>
         {/* Total Revenue Card */}
@@ -159,7 +159,7 @@ const RevenueScreen = () => {
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: wp(80) }}>
             <Text style={[poppins.regular.h5, { color: COLORS[theme].textPrimary }]}>
-              {t('revenue') || 'Total Revenue'}
+              {t('Total Revenue')}
             </Text>
             <Text style={[poppins.bold.h3, { color: COLORS[theme].accent }]}>
               {loading ? <ActivityIndicator color={COLORS[theme].accent} /> : revenueAmount}
@@ -168,7 +168,7 @@ const RevenueScreen = () => {
         </View>
 
         {/* Weekly/Monthly Tab & Revenue Amount */}
-        <View style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]}>
+        <View style={[styles.card, { backgroundColor: COLORS[theme].background }]}>
           <Text
             style={[poppins.regular.h7, { color: COLORS[theme].accent, alignSelf: 'flex-start', marginHorizontal: wp(4) }]}
           >
@@ -180,8 +180,8 @@ const RevenueScreen = () => {
           >
             <Text style={[poppins.regular.h9, { color: COLORS[theme].textPrimary }]}>
               {selectedTab === 'weekly'
-                ? (t('total_weekly_revenue') || 'Total Weekly Revenue')
-                : (t('total_monthly_revenue') || 'Total Monthly Revenue')}
+                ? ('Total Weekly Revenue')
+                : ('Total Monthly Revenue')}
             </Text>
 
             <View style={styles.tabContainer}>
@@ -198,10 +198,10 @@ const RevenueScreen = () => {
                 <Text
                   style={[
                     poppins.regular.h7,
-                    { color: selectedTab === 'weekly' ? COLORS.light.textOnPrimary : COLORS[theme].accent },
+                    { color: selectedTab === 'weekly' ? COLORS.light.white : COLORS[theme].accent },
                   ]}
                 >
-                  {t('weekly') || 'Weekly'}
+                  {'Weekly'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -220,7 +220,7 @@ const RevenueScreen = () => {
                     { color: selectedTab === 'monthly' ? COLORS.light.textOnPrimary : COLORS[theme].accent },
                   ]}
                 >
-                  {t('monthly') || 'Monthly'}
+                  {'Monthly'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -251,7 +251,6 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: wp(4),
     marginTop: hp(2),
-    padding: wp(3),
     borderRadius: wp(2),
     elevation: 3,
     shadowColor: '#000',

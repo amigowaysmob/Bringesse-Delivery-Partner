@@ -102,7 +102,7 @@ const InAppNotification = ({ data, onClose, onAccept, onReject }) => {
                             Drop:
                         </Text>
                         <Text style={[poppins.regular.h7, styles.locationText, { color: COLORS[theme].text }]}>
-                            {data.dropLocation}
+                            {data?.dropLocation}
                         </Text>
 
                         {/* Buttons */}

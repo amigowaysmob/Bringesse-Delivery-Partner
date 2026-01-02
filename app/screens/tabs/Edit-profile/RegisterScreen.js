@@ -49,6 +49,7 @@ const RegisterScreen = () => {
         if (Platform.OS !== 'android') return;
         PlayInstallReferrer.getInstallReferrerInfo((info) => {
             console.log("Install Referrer Info:", info);
+            // Alert.alert("xvc",JSON.stringify(info))
             const referrerStr = info?.installReferrer;
             if (!referrerStr) {
                 console.log("No referrer returned");
@@ -130,8 +131,8 @@ const RegisterScreen = () => {
         );
     };
     const [formValues, setFormValues] = useState(__DEV__ ? {
-        firstName: 'testing', lastName: 'test2testing', location: 'testLocation',
-        email: 'divyatestingteam@gmail.com', password: '123456', confirmPassword: '123456',
+        firstName: 'Amigo', lastName: 'test2testing', location: 'testLocation',
+        email: 'testAmigo@gmail.com', password: '123456', confirmPassword: '123456',
         vehicleCategory: '', vehicleType: '', serviceType: [],
         acceptedTerms: false,  // New field for terms acceptance
         transportOptions: [],  // changed from acceptedTerms boolean to array of selected transport options
@@ -193,7 +194,6 @@ const RegisterScreen = () => {
     const [serviceTypes, setServiceTypes] = useState([]);
     const dispatch = useDispatch();
     const [transparentOption, settransparentOption] = useState([]);
-
 
     useEffect(() => {
         const fetchAndProcessSiteDetails = async () => {
@@ -301,7 +301,6 @@ const RegisterScreen = () => {
     };
     const handleSubmit = async () => {
         if (validateFields()) {
-        setloading(true);
             let payLoad = {
                 first_name: formValues?.firstName.trim(),
                 last_name: formValues?.lastName || "",
@@ -320,6 +319,9 @@ const RegisterScreen = () => {
                 storeId: storeId ? storeId : null,
                 referal_code: formValues?.referal_code
             };
+            // Alert.alert("register", JSON.stringify(payLoad, null, 2));
+            // return;
+            setloading(true);
             try {
                 const data = await fetchData('signup/', 'POST', payLoad);
                 if (data?.status === "true") {
@@ -574,10 +576,10 @@ const RegisterScreen = () => {
                     >
                         <Text style={[poppins.medium.h4, { color: COLORS[theme].white }]}>
                             {
-                                loading ? 'Submitting...' 
-                                : 'Submit'
+                                loading ? 'Submitting...'
+                                    : 'Submit'
                             }
-                            
+
                         </Text>
                     </TouchableOpacity>
                 </View>

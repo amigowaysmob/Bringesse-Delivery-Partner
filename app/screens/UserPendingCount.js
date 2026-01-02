@@ -10,6 +10,7 @@ import { fetchData } from '../api/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import messaging from '@react-native-firebase/messaging';
 
 const UserPendingCount = ({ profileStatus, addressCurrent, location, notificationData }) => {
     const [loading, setLoading] = useState(false);
@@ -21,6 +22,13 @@ const UserPendingCount = ({ profileStatus, addressCurrent, location, notificatio
     const profileDetails = useSelector(state => state.Auth.profileDetails);
     const accessToken = useSelector(state => state.Auth.accessToken);
     const navigation = useNavigation();
+
+    useEffect(() => {
+        const unsubscribe = messaging().onMessage(async remoteMessage => {
+            toggleSwitch();
+        });
+        return unsubscribe;
+      }, []);
 
     // Badge pop animation
     const scaleAnim = useRef(new Animated.Value(1)).current;

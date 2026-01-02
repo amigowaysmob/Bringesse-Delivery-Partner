@@ -162,60 +162,89 @@ const TransportManagement = () => {
       </View>
     ) : null;
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => {
-        // item?.status !== 'cancelled' &&
-        item?.status === 'completed' && item?.status === 'cancelled' ?
-          navigation.navigate('BookingCompleted', { bid: item?._id })
-          : navigation.navigate('BookingAction', { bid: item?._id })
-      }}
-      style={[styles.card, { backgroundColor: COLORS[theme].viewBackground }]} >
-      <View style={styles.iconContainer}>
-        <MaterialCommunityIcon
-          name={getIconName(item.status)}
-          size={wp(7)}
-          color={COLORS[theme].accent}
-        />
-      </View>
-      <View style={styles.textContainer}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary, textTransform: "capitalize" }]}>
-            {item.categoryName || 'Category'}
-          </Text>
-          {
-            item?.cutomerReview?.ratings &&
-            <Text style={[poppins.semi_bold.h8, { color: COLORS[theme].textPrimary }]}>
-              {item?.cutomerReview?.ratings} ★
-            </Text>
-          }
+    const renderItem = ({ item }) => (
+      <TouchableOpacity
+        onPress={() => {
+          item?.status === 'completed' || item?.status === 'cancelled'
+            ? navigation.navigate('BookingCompleted', { bid: item?._id })
+            : navigation.navigate('BookingAction', { bid: item?._id });
+        }}
+        style={{
+          flexDirection: 'row',
+          padding: wp(4),
+          borderRadius: wp(3),
+          marginBottom: wp(3),
+          backgroundColor: COLORS[theme].viewBackground,
+          // backgroundColor: item.status === 'completed'
+          //   ? '#E0F7FA' // light cyan for completed
+          //   : item.status === 'cancelled'
+          //   ? '#FFEBEE' // light red for cancelled
+          //   : '#FFFDE7', // light yellow for pending
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 4,
+          borderLeftWidth: 5,
+          borderLeftColor:
+            item.status === 'completed'
+              ? '#00ACC1'
+              : item.status === 'cancelled'
+              ? '#E53935'
+              : '#FDD835',
+        }}
+      >
+        <View style={{ marginRight: wp(4), justifyContent: 'center' }}>
+          <MaterialCommunityIcon
+            name={getIconName(item.status)}
+            size={wp(7)}
+            color={COLORS[theme].accent}
+          />
         </View>
-        <Text style={[poppins.bold.h7, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-          Booking ID: {item.uniqueId}
-        </Text>
-        <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-          Status: {getStatusText(item.status)}
-        </Text>
-
-        <Text style={[poppins.regular.h8, { color: COLORS[theme].textPrimary, marginTop: wp(1) }]}>
-          {formatDateTime(item.createdAt)}
-        </Text>
-      </View>
-
-      {/* Call icon button */}
-      {
-        item?.status !== 'completed' && item?.status !== 'cancelled' &&
-        <TouchableOpacity
-          style={styles.callButton}
-          onPress={() => handleCall(item.customer?.phone)}
-        >
-          <MaterialCommunityIcon name="phone" size={wp(7)} color={COLORS[theme].accent} />
-        </TouchableOpacity>
-      }
-
-    </TouchableOpacity >
-  );
-
+    
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontFamily: poppins.semi_bold.h8.fontFamily, color: COLORS[theme].textPrimary, textTransform: 'capitalize' }}>
+              {item.categoryName || 'Category'}
+            </Text>
+            {item?.cutomerReview?.ratings && (
+              <Text style={{ fontFamily: poppins.semi_bold.h8.fontFamily, color: COLORS[theme].textPrimary }}>
+                {item?.cutomerReview?.ratings} ★
+              </Text>
+            )}
+          </View>
+    
+          <Text style={{ fontFamily: poppins.bold.h7.fontFamily, color: COLORS[theme].textPrimary, marginTop: wp(1) }}>
+            Booking ID: {item.uniqueId}
+          </Text>
+    
+          <Text style={{ fontFamily: poppins.regular.h8.fontFamily, color: COLORS[theme].textPrimary, marginTop: wp(1) }}>
+            Status: {getStatusText(item.status)}
+          </Text>
+    
+          <Text style={{ fontFamily: poppins.regular.h8.fontFamily, color: COLORS[theme].textPrimary, marginTop: wp(1) }}>
+            {formatDateTime(item.createdAt)}
+          </Text>
+        </View>
+    
+        {item?.status !== 'completed' && item?.status !== 'cancelled' && (
+          <TouchableOpacity
+            style={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: wp(2),
+              marginLeft: wp(2),
+              borderRadius: wp(2),
+              backgroundColor: '#E8F5E9',
+            }}
+            onPress={() => handleCall(item.customer?.phone)}
+          >
+            <MaterialCommunityIcon name="phone" size={wp(7)} color={COLORS[theme].accent} />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+    
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchOrders(1, activeTab); // Trigger the fetch when refreshing
