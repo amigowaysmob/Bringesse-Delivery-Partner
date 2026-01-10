@@ -1,23 +1,26 @@
-require 'json'
-require 'fileutils'
-
+# Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
     "react-native/scripts/react_native_pods.rb",
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, '16.0'
-
+platform :ios, min_ios_version_supported
 prepare_react_native_project!
+
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+  use_frameworks! :linkage => linkage.to_sym
+end
 
 target 'bringessedelivery_partner' do
   config = use_native_modules!
 
   use_react_native!(
     :path => config[:reactNativePath],
-    :app_path => "#{Pod::Config.instance.installation_root}/..",
-    :hermes_enabled => false
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
   # ----------------------
@@ -25,30 +28,9 @@ target 'bringessedelivery_partner' do
   # ----------------------
   pod 'FirebaseCore', :modular_headers => true
   pod 'FirebaseCoreInternal', :modular_headers => true
-  pod 'FirebaseCoreExtension', :modular_headers => true
-
-  pod 'FirebaseAuth', :modular_headers => true
-  pod 'FirebaseAuthInterop', :modular_headers => true
-
-  pod 'FirebaseFirestore', :modular_headers => true
-  pod 'FirebaseFirestoreInternal', :modular_headers => true
-
-  pod 'FirebaseAnalytics', :modular_headers => true
   pod 'GoogleUtilities', :modular_headers => true
+  
 
-  pod 'FirebaseAppCheckInterop', :modular_headers => true
-  pod 'RecaptchaInterop', :modular_headers => true
-
-  # ----------------------
-  # Google Maps
-  # ----------------------
-  pod 'GoogleMaps', '~> 8.4'
-  pod 'GooglePlaces', '~> 8.4'
-
-  # ----------------------
-  # React Native Maps
-  # ----------------------
-  pod 'react-native-maps', :path => '../node_modules/react-native-maps'
 
   # ----------------------
   # HyperSDK (XCFramework)
@@ -58,41 +40,32 @@ target 'bringessedelivery_partner' do
   # ----------------------
   # Post install fixes
   # ----------------------
+
   post_install do |installer|
+    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
       config[:reactNativePath],
-      :mac_catalyst_enabled => false
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
     )
-
-    # Exclude arm64 for simulator (M1/M2)
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |cfg|
-        cfg.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+    
+    # Remove libPods-bringessedelivery_partner.a reference that causes linker errors
+    # In RN 0.79, pods are linked individually via xcconfig, not as a combined library
+    project_path = File.join(__dir__, 'bringessedelivery_partner.xcodeproj', 'project.pbxproj')
+    if File.exist?(project_path)
+      project_content = File.read(project_path)
+      original_content = project_content.dup
+      
+      # Remove all lines containing libPods-bringessedelivery_partner.a references
+      lines = project_content.lines
+      filtered_lines = lines.reject do |line|
+        line.include?('libPods-bringessedelivery_partner.a')
       end
-    end
-
-    # Fix HyperSDK xcframework headers
-    installer.pods_project.targets.each do |target|
-      if target.name == 'HyperSDK'
-        target.build_configurations.each do |config|
-          # Framework search path
-          config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= ['$(inherited)']
-          config.build_settings['FRAMEWORK_SEARCH_PATHS'] << '$(PODS_ROOT)/HyperSDK/HyperSDK.xcframework'
-
-          # Library search path
-          config.build_settings['LIBRARY_SEARCH_PATHS'] ||= ['$(inherited)']
-          config.build_settings['LIBRARY_SEARCH_PATHS'] << '$(PODS_ROOT)/HyperSDK/HyperSDK.xcframework'
-
-          # Expose all headers
-          target.build_phases.each do |phase|
-            next unless phase.respond_to?(:files)
-            phase.files.each do |file|
-              file.settings ||= {}
-              file.settings['ATTRIBUTES'] = ['Public']
-            end
-          end
-        end
+      
+      if filtered_lines.length < lines.length
+        File.write(project_path, filtered_lines.join)
+        puts "✅ Removed libPods-bringessedelivery_partner.a references from project.pbxproj".green
       end
     end
   end
