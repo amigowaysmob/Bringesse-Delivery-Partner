@@ -13,7 +13,7 @@ import HeaderBar from '../components/header';
 import { useSelector } from 'react-redux';
 import { fetchData } from '../api/api';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline, AnimatedRegion } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import { IMAGE_ASSETS } from '../resources/images';
 import polyline from '@mapbox/polyline';
@@ -22,6 +22,8 @@ import BookingConfirmModal from './BookingConfirmModal';
 import BookingDetailsModal from './BookingDetailsModal';
 import io from 'socket.io-client';  // <-- Import socket.io-client
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc'; // replace with your key
 const SOCKET_URL = 'https://www.bringesse.com:3000/';
 const BookingAction = ({ route }) => {
@@ -29,6 +31,7 @@ const BookingAction = ({ route }) => {
   const { t } = useTranslation();
   const profile = useSelector(state => state.Auth.profile);
   const profileDetails = useSelector(state => state.Auth.profileDetails);
+  
   const navigation = useNavigation()
   const { bid, acceptStatus } = route.params;
   const locationWatcher = useRef(null); // to store watch ID
@@ -42,6 +45,7 @@ const BookingAction = ({ route }) => {
   const siteDetails = useSelector(state => state.Auth?.siteDetails);
   const mapRef = useRef(null);
   const socketRef = useRef(null);
+
   // Fetch booking details
   const fnGetBookingDetails = async () => {
     try {
@@ -168,6 +172,16 @@ const BookingAction = ({ route }) => {
       setconfirmModal(false);
     }
   };
+  useEffect(() => {
+    if (mapRef.current && currentLoc) {
+      mapRef.current.animateToRegion({
+        latitude: currentLoc.latitude,
+        longitude: currentLoc.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    }
+  }, [currentLoc]);
 
   useEffect(() => {
     if (!bid || !profile) return;
@@ -246,11 +260,11 @@ const BookingAction = ({ route }) => {
     const interval = setInterval(() => {
       fnGetBookingDetails();
     }, 2000);
-  
+
     // Cleanup when component unmounts or when `bid` changes
     return () => clearInterval(interval);
   }, [bid]);
-  
+
 
   useFocusEffect(
     useCallback(() => {
@@ -309,7 +323,9 @@ const BookingAction = ({ route }) => {
       <HeaderBar title={t('Booking')} showBackArrow />
       {bookingStatus !== 'cancelled' ?
         <>
+
           {currentLoc && bookingStatus !== 'picked' && (
+
             <MapView
               ref={mapRef}
               style={styles.map}
@@ -319,30 +335,34 @@ const BookingAction = ({ route }) => {
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01,
               }}
-              showsUserLocation
             >
-              <Marker coordinate={currentLoc} title="You">
-
+              {/* DRIVER MARKER */}
+              <Marker
+                coordinate={currentLoc} // driver coordinates
+                title="Me"
+                tracksViewChanges={false}
+              >
                 <Image
-                  source={{ uri: siteDetails?.media_url + 'vehicles/' + profileDetails?.vechile_image?.image }}
+                  source={{
+                    uri:
+                      siteDetails?.media_url +
+                      'vehicles/' +
+                      profileDetails?.vechile_image?.image,
+                  }}
                   style={{ width: wp(10), height: wp(10), borderRadius: wp(5) }}
+                  resizeMode="contain"
                 />
               </Marker>
+              {/* PICKUP MARKER */}
               {pickupCoords && (
                 <Marker
                   coordinate={{ latitude: pickupCoords[1], longitude: pickupCoords[0] }}
                   title="Pickup"
                   pinColor="red"
-                >
-                  <MaterialCommunityIcon
-                    name={'map-marker-circle'}
-                    color={COLORS[theme].accent}
-                    size={wp(6)}
-                    style={{ marginHorizontal: wp(2) }}
-                  />
-                </Marker>
+                />
               )}
 
+              {/* ROUTE */}
               {routeCoordinates.length > 0 && (
                 <Polyline
                   coordinates={routeCoordinates}
@@ -351,10 +371,10 @@ const BookingAction = ({ route }) => {
                 />
               )}
             </MapView>
+
           )}
         </>
         :
-       
         <MaterialCommunityIcon
           name={'close-circle-outline'}
           size={wp(25)}

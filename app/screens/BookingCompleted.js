@@ -85,6 +85,7 @@ const BookingCompleted = ({ route }) => {
     status: bookingStatus,
     createdAt,
     vehicle,
+    driver_fare
   } = bookingDetails;
 
   const pickupCoords = pickupLocation?.coordinates;

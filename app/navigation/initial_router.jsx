@@ -31,6 +31,7 @@ import HyperJusPay from '../screens/HyperJusPay';
 import QuickShare from '../screens/QuickShare';
 import CustomerSupport from '../screens/CustomerSupport';
 import uploadRegisterDocs from '../screens/uploadRegisterDocs';
+import AccountManagement from '../screens/AccountManagement';
 const Stack = createNativeStackNavigator();
 const MyTheme = {
   dark: true,
@@ -84,6 +85,8 @@ function InitialRouter() {
         <Stack.Screen name="QuickShare" component={QuickShare} />
         <Stack.Screen name="CustomerSupport" component={CustomerSupport} />
         <Stack.Screen name="uploadRegisterDocs" component={uploadRegisterDocs} />
+        <Stack.Screen name="AccountManagement" component={AccountManagement} />
+        {/* AccountManagement */}
       </Stack.Navigator>
     </NavigationContainer>
   );

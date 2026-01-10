@@ -27,7 +27,6 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
     useEffect(() => {
         fetchProfileData();
     }, [isOnline]);
-
     // Auto-update driver location every 10 seconds if online
     useEffect(() => {
         if (!isOnline) return; // Don't update when offline
@@ -35,7 +34,7 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
             clearInterval(locationIntervalRef.current);
         locationIntervalRef.current = setInterval(() => {
             sendLocation(currLocation, address);
-        }, 10000);
+        }, 5000);
         return () => {
             clearInterval(locationIntervalRef.current);
         };
@@ -63,6 +62,9 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
         } catch (error) {
             console.error('Error sending location:', error);
         }
+        finally {
+            fetchProfileData()
+        }
     };
 
     // ---------------------------------------------
@@ -86,7 +88,6 @@ const UserToggleStatus = ({ profileStatus, addressCurrent, location }) => {
                 return;
             }
             setIsOnline(data?.live_status ? true : false);
-
             dispatch({
                 type: 'PROFILE_DETAILS',
                 payload: data,

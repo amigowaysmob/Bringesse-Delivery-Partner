@@ -236,7 +236,7 @@ const UserProfileCard = () => {
           <MaterialCommunityIcon
             name="chevron-right"
             size={wp(8)}
-            color={COLORS[theme].textSecondary}
+            color={COLORS[theme].textPrimary}
           />
         </Animated.View>
       </View>

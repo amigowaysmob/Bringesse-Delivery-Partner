@@ -83,7 +83,7 @@ const HomeScreen = () => {
         console.error('Geolocation error:', error);
       },
       {
-        enableHighAccuracy: true,
+        enableHighAccuracy: false,
         timeout: 30000,
         maximumAge: 10000,
         forceRequestLocation: true,

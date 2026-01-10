@@ -144,7 +144,6 @@ const OrdersScreen = () => {
   const renderItem = ({ item }) => {
     const store = item?.store;
     const address = item?.deliveryAddress;
-
     return (
       <TouchableOpacity
         activeOpacity={0.9}
@@ -169,10 +168,9 @@ const OrdersScreen = () => {
           shadowOpacity: 0.08,
           shadowRadius: 6,
           shadowOffset: { width: 0, height: 3 },
-          flexDirection: 'row', width: wp(95),alignSelf:"center"
+          flexDirection: 'row', width: wp(95), alignSelf: "center"
         }}
       >
-        {/* LEFT ICON SECTION */}
         <View
           style={{
             width: wp(14),
@@ -210,7 +208,6 @@ const OrdersScreen = () => {
             >
               {store?.name || 'Store'}
             </Text>
-
 
           </View>
 
@@ -299,7 +296,14 @@ const OrdersScreen = () => {
               </Text>
             </View>
           )}
-
+          <Text
+            style={[
+              poppins.semi_bold.h7,
+              { color: COLORS[theme].accent },
+            ]}
+          >
+            {item?.driver_fare}
+          </Text>
           <View style={{
             flexDirection: "row", justifyContent: "space-between", alignItems: "center",
             marginTop: wp(2.5),
@@ -353,6 +357,8 @@ const OrdersScreen = () => {
               </TouchableOpacity>
             )}
           </View>
+          {/* <Text>{JSON.stringify(item,null,2)}</Text> */}
+
         </View>
       </TouchableOpacity>
     );

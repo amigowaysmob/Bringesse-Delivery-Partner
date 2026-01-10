@@ -1,13 +1,7 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Image,
-  Linking,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  Image, Linking,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
@@ -17,37 +11,31 @@ import { COLORS } from '../resources/colors';
 import { wp, hp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector } from 'react-redux';
+
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 
 const StoreLocation = ({ userstatus, close }) => {
   const { theme } = useTheme();
   const mapRef = useRef(null);
-
-// Inside your component
-const handleCall = (number) => {
-  if (!number) return;
-  const url = `tel:${number}`;
-  Linking.canOpenURL(url)
-    .then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        console.log("Can't handle phone number:", number);
-      }
-    })
-    .catch((err) => console.error('An error occurred', err));
-};
-
-
-  const [currentLoc, setCurrentLoc] = useState(null);
+  const profileDetails = useSelector(state => state.Auth.profileDetails);
+  const siteDetails = useSelector(state => state.Auth?.siteDetails);
+  const [currentLoc, setCurrentLoc] = useState(null); // Driver location
   const [routeCoordinates, setRouteCoordinates] = useState([]);
-
-  // ✅ SAFELY DERIVE DATA
   const longitude = userstatus?.location?.coordinates?.[0];
   const latitude = userstatus?.location?.coordinates?.[1];
   const storeName = userstatus?.name;
 
-  // -------- GET CURRENT LOCATION --------
+  // -------- HANDLE CALL --------
+  const handleCall = (number) => {
+    if (!number) return;
+    const url = `tel:${number}`;
+    Linking.canOpenURL(url)
+      .then(supported => supported && Linking.openURL(url))
+      .catch(err => console.error('An error occurred', err));
+  };
+
+  // -------- GET DRIVER LOCATION --------
   const getLocationOnce = () =>
     new Promise((resolve, reject) => {
       Geolocation.getCurrentPosition(
@@ -69,13 +57,9 @@ const handleCall = (number) => {
         `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${GOOGLE_MAPS_APIKEY}`
       );
       const json = await res.json();
-
       if (json.routes?.length) {
         const pts = polyline.decode(json.routes[0].overview_polyline.points);
-        return pts.map(([lat, lng]) => ({
-          latitude: lat,
-          longitude: lng,
-        }));
+        return pts.map(([lat, lng]) => ({ latitude: lat, longitude: lng }));
       }
     } catch (e) {
       console.log('Route fetch error:', e);
@@ -86,14 +70,11 @@ const handleCall = (number) => {
   // -------- INIT --------
   useEffect(() => {
     if (!latitude || !longitude) return;
-    // console.log("Fetching route to:", userstatus?.contactNo);
+
     const init = async () => {
       try {
         const loc = await getLocationOnce();
-        const route = await fetchRoute(loc, {
-          latitude,
-          longitude,
-        });
+        const route = await fetchRoute(loc, { latitude, longitude });
         setRouteCoordinates(route);
       } catch (err) {
         console.log('Init error:', err);
@@ -103,27 +84,35 @@ const handleCall = (number) => {
     init();
   }, [latitude, longitude]);
 
-  // -------- FIT MAP --------
+  // -------- FIT MAP TO DRIVER & STORE --------
   useEffect(() => {
     if (!mapRef.current || !currentLoc || !latitude || !longitude) return;
 
     mapRef.current.fitToCoordinates(
       [currentLoc, { latitude, longitude }],
-      {
-        edgePadding: { top: 80, bottom: 80, left: 80, right: 80 },
-        animated: true,
-      }
+      { edgePadding: { top: 80, bottom: 80, left: 80, right: 80 }, animated: true }
     );
   }, [routeCoordinates, currentLoc]);
 
-  // ✅ CONDITIONAL RENDER (NOT HOOKS)
+  // -------- AUTO-FOLLOW DRIVER --------
+  useEffect(() => {
+    if (!mapRef.current || !currentLoc) return;
+
+    mapRef.current.animateToRegion({
+      latitude: currentLoc.latitude,
+      longitude: currentLoc.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+  }, [currentLoc]);
+
+  // -------- CONDITIONAL RENDER --------
   if (!userstatus) return null;
+
   if (!currentLoc) {
     return (
       <View style={[styles.card, styles.center, { backgroundColor: COLORS[theme].background }]}>
-        <TouchableOpacity style={{
-          position: 'absolute', top: hp(2), right: wp(5),
-        }} onPress={close}>
+        <TouchableOpacity style={{ position: 'absolute', top: hp(2), right: wp(5) }} onPress={close}>
           <MaterialCommunityIcon name="close" size={wp(8)} color={COLORS[theme].textPrimary} />
         </TouchableOpacity>
         <ActivityIndicator size="large" color={COLORS[theme].accent} />
@@ -136,35 +125,23 @@ const handleCall = (number) => {
 
   return (
     <View style={[styles.card, { backgroundColor: COLORS[theme].background }]}>
-      <View style={{ flexDirection: "row", alignItems: "center", marginHorizontal: wp(4) }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: wp(4) }}>
         <TouchableOpacity onPress={close}>
           <MaterialCommunityIcon name="chevron-left" size={wp(8)} color={COLORS[theme].textPrimary} />
         </TouchableOpacity>
         <View style={{ margin: wp(2) }}>
-          <Text
-            style={[
-              poppins.medium.h7,
-              styles.storeName,
-              { color: COLORS[theme].textPrimary },
-            ]}
-          >
+          <Text style={[poppins.medium.h7, { color: COLORS[theme].textPrimary }]}>
             {storeName}
           </Text>
-          <Text
-            style={[
-              poppins.medium.h7,
-              { color: COLORS[theme].textPrimary },
-            ]}
-          >
+          <Text style={[poppins.medium.h7, { color: COLORS[theme].textPrimary }]}>
             {userstatus?.contactNo}
           </Text>
         </View>
-        <View style={{ position: "absolute", right: wp(4) }}>
+        <View style={{ position: 'absolute', right: wp(4) }}>
           <TouchableOpacity onPress={() => handleCall(userstatus?.contactNo)}>
             <MaterialCommunityIcon name="phone" size={wp(7)} color={COLORS[theme].textPrimary} />
           </TouchableOpacity>
         </View>
-
       </View>
 
       <MapView
@@ -176,50 +153,63 @@ const handleCall = (number) => {
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         }}
-        showsUserLocation
+        showsCompass
+        rotateEnabled
       >
-        <Marker coordinate={currentLoc}>
+        {/* DRIVER MARKER */}
+        <Marker
+          coordinate={currentLoc}
+          title="Me"
+          tracksViewChanges={false} // improves performance
+        >
           <Image
-            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }}
+            source={{
+              uri:
+                siteDetails?.media_url +
+                'vehicles/' +
+                profileDetails?.vechile_image?.image,
+            }}
             style={styles.driverImage}
+            resizeMode="contain"
           />
         </Marker>
+
+        {/* STORE/PICKUP MARKER */}
         <Marker
           coordinate={{ latitude, longitude }}
           pinColor="green"
           title={storeName}
         />
+
+        {/* ROUTE */}
         {routeCoordinates.length > 0 && (
           <Polyline
             coordinates={routeCoordinates}
-            strokeColor="red"
-            strokeWidth={wp(1)}
+            strokeColor={COLORS[theme].accent}
+            strokeWidth={wp(1.5)}
           />
         )}
       </MapView>
     </View>
   );
 };
+
 export default StoreLocation;
+
 const styles = StyleSheet.create({
   card: {
     width: wp(99),
-    height: hp(86),
+    height: hp(83),
     borderRadius: wp(1),
     borderWidth: wp(0.4),
     alignSelf: 'center',
-    position: "absolute",
-    zIndex: 99, 
+    position: 'absolute',
+    zIndex: 99,
     bottom: wp(0.1),
-    // borderColor: '#ccc',
   },
   map: {
     width: '100%',
     height: '90%',
-  },
-  closeText: {
-    fontSize: wp(5),
-    fontWeight: 'bold',
   },
   driverImage: {
     width: wp(10),

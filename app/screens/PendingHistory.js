@@ -194,7 +194,6 @@ const PendingHistory = () => {
               {reqDate}
             </Text>
           )}
-
           <TouchableOpacity
             style={[styles.acceptBtn, { backgroundColor: 'green' }]}
             onPress={() => {

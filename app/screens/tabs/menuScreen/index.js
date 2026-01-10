@@ -239,10 +239,10 @@ const MoreScreen = () => {
     </TouchableOpacity>
   );
   return (
-    <GestureHandlerRootView style={{ flex: 1,}} 
+    <GestureHandlerRootView style={{ flex: 1, }}
     >
       <View style={{ flex: 1, backgroundColor: COLORS[theme].background }}
-    // pointerEvents={profile?.live_status ? 'auto' : 'none'}
+      // pointerEvents={profile?.live_status ? 'auto' : 'none'}
       >
         <UserProfileCard profile={profile} />
         <ScrollView
@@ -268,6 +268,7 @@ const MoreScreen = () => {
           {/* <SectionItem icon="ticket" navigation={navigation} label="Refer Friend" navigationPath='ReferFriend' /> */}
           <SectionItem icon="currency-rupee" navigation={navigation} label="RevenueScreen" navigationPath='RevenueScreen' />
           {/* <SectionItem icon="face-agent" navigation={navigation} label="Customer Support" navigationPath='CustomerSupport' /> */}
+          <SectionItem icon="delete" label="Delete Account" navigationPath='AccountManagement' navigation={navigation} />
           <ThemeSection />
           {/* <LangSection /> */}
           <LogoutSection />
