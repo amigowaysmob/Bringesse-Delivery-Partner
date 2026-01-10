@@ -4698,7 +4698,6 @@ __metadata:
     babel-jest: ^29.6.3
     eslint: ^8.19.0
     formik: ^2.4.6
-    hyper-sdk-react: ^5.0.4
     i18next: ^23.16.4
     jest: ^29.6.3
     lodash: ^4.17.21
@@ -4751,7 +4750,7 @@ __metadata:
     react-native-play-install-referrer: ^1.1.9
     react-native-qrcode-scanner: ^1.5.5
     react-native-ratings: ^8.1.0
-    react-native-razorpay: ^2.3.0
+    react-native-razorpay: ^2.3.1
     react-native-reanimated: 3.19.0
     react-native-reanimated-carousel: 4.0.0-canary.15
     react-native-reanimated-skeleton: ^1.5.1
@@ -7191,16 +7190,6 @@ __metadata:
   version: 2.1.0
   resolution: "human-signals@npm:2.1.0"
   checksum: b87fd89fce72391625271454e70f67fe405277415b48bcc0117ca73d31fa23a4241787afdc8d67f5a116cf37258c052f59ea82daffa72364d61351423848e3b8
-  languageName: node
-  linkType: hard
-
-"hyper-sdk-react@npm:^5.0.4":
-  version: 5.0.4
-  resolution: "hyper-sdk-react@npm:5.0.4"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 535734b91d0d2726cf4f0761a132eedfe4cb3945fe915d8bca8facb08d4d96e87fef32f8a955672362254f749216610d086c548058787c214250f71431f5aa29
   languageName: node
   linkType: hard
 
@@ -10826,13 +10815,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-razorpay@npm:^2.3.0":
-  version: 2.3.0
-  resolution: "react-native-razorpay@npm:2.3.0"
+"react-native-razorpay@npm:^2.3.1":
+  version: 2.3.1
+  resolution: "react-native-razorpay@npm:2.3.1"
   peerDependencies:
     react: ">=16.8.0"
     react-native: ">=0.66.0"
-  checksum: 35a549938e001d2ad30f8bcacc04df05070ea8cafc201e8938c750f5abc9b4c9ad29240924398030a1cc3633ac3e71d1871f29ff7bdf9096aa0d9cbd304d2ad4
+  checksum: c0f2b31996d151d595814a1ecd5b306f04ef5652d6a54fc6a19e1c4676a729938cc3604fc87fe8d50efefa8dbbe7553acd1b66df8f461661cae1418b68a35fa3
   languageName: node
   linkType: hard
 

@@ -1,35 +1,48 @@
 import UIKit
 import React
-import GoogleMaps
-import HyperSDK  // ✅ import the umbrella header
+import React_RCTAppDelegate
+import ReactAppDependencyProvider
 
 @main
-class AppDelegate: RCTAppDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  var window: UIWindow?
 
-  override func application(
+  var reactNativeDelegate: ReactNativeDelegate?
+  var reactNativeFactory: RCTReactNativeFactory?
+
+  func application(
     _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    let delegate = ReactNativeDelegate()
+    let factory = RCTReactNativeFactory(delegate: delegate)
+    delegate.dependencyProvider = RCTAppDependencyProvider()
 
-    // Set your RN module name
-    self.moduleName = "bringessedelivery_partner"
-    self.initialProps = [:]
+    reactNativeDelegate = delegate
+    reactNativeFactory = factory
 
-    // Google Maps API
-    GMSServices.provideAPIKey("AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc")
-    GMSPlacesClient.provideAPIKey("AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc")
+    window = UIWindow(frame: UIScreen.main.bounds)
 
-    // Initialize HyperSDK (example)
-    Hyper.initialize()  // ✅ optional: call your HyperSDK setup if needed
+    factory.startReactNative(
+      withModuleName: "bringessedelivery_partner",
+      in: window,
+      launchOptions: launchOptions
+    )
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return true
+  }
+}
+
+class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
+  override func sourceURL(for bridge: RCTBridge) -> URL? {
+    self.bundleURL()
   }
 
-  override func sourceURL(for bridge: RCTBridge!) -> URL! {
+  override func bundleURL() -> URL? {
 #if DEBUG
-    return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
 #else
-    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
 }
