@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Platform, PermissionsAndroid, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
+import { requestLocationPermission } from '../utils/utils';
 
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc'; // Replace with your API key
 
@@ -13,13 +14,7 @@ export default function useCurrentLocation() {
   // Request Permission
   // ----------------------------------------
   const requestPermission = async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-    return true; // iOS handles permissions automatically
+    return await requestLocationPermission();
   };
 
   // ----------------------------------------

@@ -25,6 +25,7 @@ import { PlayInstallReferrer } from 'react-native-play-install-referrer';
 import DeviceInfo from 'react-native-device-info';
 import messaging from '@react-native-firebase/messaging';
 import { useAuthHoc } from '../../../config/config';
+import { requestLocationPermission } from '../../utils/utils';
 
 const RegisterScreen = () => {
     const { theme } = useTheme();
@@ -344,6 +345,13 @@ const RegisterScreen = () => {
                     description: userDatas?.message,
                     type: 'success',
                   });
+      
+                  // Request location permission after successful login
+                  try {
+                    await requestLocationPermission();
+                  } catch (error) {
+                    console.log('Location permission request error:', error);
+                  }
       
                   // Navigate to home screen
                   navigation.reset({

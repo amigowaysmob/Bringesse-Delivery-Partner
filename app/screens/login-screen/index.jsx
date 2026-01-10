@@ -18,6 +18,7 @@ import FlashMessage, { showMessage } from 'react-native-flash-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import DeviceInfo from 'react-native-device-info';
+import { requestLocationPermission } from '../../utils/utils';
 const LoginScreen = () => {
   // Hooks
   const navigation = useNavigation();
@@ -98,6 +99,14 @@ const LoginScreen = () => {
                 description: userDatas?.message,
                 type: 'success',
               });
+              
+              // Request location permission after successful login
+              try {
+                await requestLocationPermission();
+              } catch (error) {
+                console.log('Location permission request error:', error);
+              }
+              
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'home-screen' }],
