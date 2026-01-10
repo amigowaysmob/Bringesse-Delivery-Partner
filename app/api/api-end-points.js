@@ -1,4 +1,4 @@
-const BASE_URL = 'https://bringesse.com:3001/driver/';
+const BASE_URL = 'https://bringesse.com:3001/driver';
 const DEV_BASE_URL = 'https://bringesse.in:4001/driver/';
 export const API_BASE_URL = `${BASE_URL}`;
 /* ******  Authentication APIs Start ****** */

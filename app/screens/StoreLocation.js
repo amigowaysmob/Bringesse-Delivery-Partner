@@ -12,6 +12,7 @@ import { wp, hp } from '../resources/dimensions';
 import { poppins } from '../resources/fonts';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector } from 'react-redux';
+import { requestLocationPermission } from '../utils/utils';
 
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 
@@ -36,8 +37,14 @@ const StoreLocation = ({ userstatus, close }) => {
   };
 
   // -------- GET DRIVER LOCATION --------
-  const getLocationOnce = () =>
-    new Promise((resolve, reject) => {
+  const getLocationOnce = async () => {
+    // Request permission first
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) {
+      throw new Error('Location permission denied');
+    }
+
+    return new Promise((resolve, reject) => {
       Geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
@@ -45,10 +52,14 @@ const StoreLocation = ({ userstatus, close }) => {
           setCurrentLoc(loc);
           resolve(loc);
         },
-        (err) => reject(err),
+        (err) => {
+          console.error('Location error:', err);
+          reject(err);
+        },
         { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
       );
     });
+  };
 
   // -------- FETCH ROUTE --------
   const fetchRoute = async (origin, destination) => {

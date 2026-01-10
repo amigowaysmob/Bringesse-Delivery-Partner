@@ -43,13 +43,20 @@ export default function useCurrentLocation() {
   // ----------------------------------------
   const getLocation = async () => {
     setLocationLoading(true);
+    
+    // Request permission first
     const hasPermission = await requestPermission();
     if (!hasPermission) {
-      Alert.alert('Permission denied', 'Location permission is required.');
+      Alert.alert(
+        'Permission Denied',
+        'Location permission is required to show your position on the map.',
+        [{ text: 'OK' }]
+      );
       setLocationLoading(false);
       return;
     }
 
+    // Get current position
     Geolocation.getCurrentPosition(
       pos => {
         const coords = {
@@ -64,10 +71,31 @@ export default function useCurrentLocation() {
         setLocationLoading(false);
       },
       error => {
-        console.log('Location Error:', error);
+        console.error('Location Error:', error);
+        
+        // Handle specific error codes
+        let errorMessage = 'Failed to get location.';
+        if (error.code === 1) {
+          // PERMISSION_DENIED
+          errorMessage = 'Location permission was denied. Please enable it in Settings.';
+        } else if (error.code === 2) {
+          // POSITION_UNAVAILABLE
+          errorMessage = 'Location information is unavailable.';
+        } else if (error.code === 3) {
+          // TIMEOUT
+          errorMessage = 'Location request timed out. Please try again.';
+        }
+        
+        Alert.alert('Location Error', errorMessage);
         setLocationLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 15000, 
+        maximumAge: 10000,
+        forceRequestLocation: true,
+        showLocationDialog: true,
+      }
     );
   };
 

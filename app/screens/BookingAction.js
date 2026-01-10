@@ -22,6 +22,7 @@ import BookingConfirmModal from './BookingConfirmModal';
 import BookingDetailsModal from './BookingDetailsModal';
 import io from 'socket.io-client';  // <-- Import socket.io-client
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requestLocationPermission } from '../utils/utils';
 
 
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc'; // replace with your key
@@ -70,14 +71,28 @@ const BookingAction = ({ route }) => {
     }
   };
   // Get user location
-  const getLocation = () => {
+  const getLocation = async () => {
+    // Request permission first
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) {
+      console.warn('Location permission denied');
+      return;
+    }
+
     Geolocation.getCurrentPosition(
       pos => {
         const { latitude, longitude } = pos.coords;
         setCurrentLoc({ latitude, longitude });
       },
       error => {
-        // Alert.alert('Location Error', error.message || 'Failed to get location');
+        console.error('Location Error:', error);
+        if (error.code === 1) {
+          // PERMISSION_DENIED
+          Alert.alert(
+            'Location Permission Denied',
+            'Please enable location permission in Settings to track your position.'
+          );
+        }
       },
       {
         enableHighAccuracy: true,

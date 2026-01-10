@@ -18,6 +18,7 @@ import UerProfileCard from '../../UerProfileCard';
 import messaging from '@react-native-firebase/messaging';
 import { poppins } from '../../../resources/fonts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requestLocationPermission } from '../../../utils/utils';
 import UserawaitStatus from '../../UserawaitStatus';
 import DeviceInfo from 'react-native-device-info';
 import { fetchData } from '../../../api/api';
@@ -259,7 +260,7 @@ const HomeScreen = () => {
           profileDetails?.welcomeStatus == '0' &&
           <WelcomeCard userstatus={profileDetails?.live_status} />
         }
-        <VersionUpgradeModal />
+        {/* <VersionUpgradeModal /> */}
         <CheckDocs />
         <CheckPaymentId />
         <UserawaitStatus userstatus={profileDetails?.profile_status} />
