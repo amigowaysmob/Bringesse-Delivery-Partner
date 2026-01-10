@@ -9,6 +9,7 @@ android/build/
 ios/Pods/
 ios/build/
 ios/.vscode/
+ios/.xcode.env.local
 
 # React Native Packager
 .expo/
