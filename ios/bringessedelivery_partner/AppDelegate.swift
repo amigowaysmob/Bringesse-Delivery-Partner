@@ -4,7 +4,7 @@ import React_RCTAppDelegate
 import ReactAppDependencyProvider
 //import hyper_sdk_react
 import Firebase
-//import GoogleMaps
+import GoogleMaps
 
 
 @main
@@ -25,8 +25,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     //init firebase
     FirebaseApp.configure()
     
-//    GMSServices.provideAPIKey("AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc")
-//    GMSPlacesClient.provideAPIKey("AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc")
+    // init gmaps
+    GMSServices.provideAPIKey("AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc")
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
@@ -40,6 +40,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     )
 
     return true
+  }
+  
+  func getReactNativeFactory() -> Any! {
+    return reactNativeFactory
   }
 }
 
