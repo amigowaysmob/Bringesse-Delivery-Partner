@@ -31,16 +31,6 @@ target 'bringessedelivery_partner' do
   pod 'GoogleUtilities', :modular_headers => true
   
 
-
-  # ----------------------
-  # HyperSDK (XCFramework)
-  # ----------------------
-  # pod 'HyperSDK', :path => '../node_modules/HyperSDK'
-
-  # ----------------------
-  # Post install fixes
-  # ----------------------
-
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
@@ -66,6 +56,14 @@ target 'bringessedelivery_partner' do
       if filtered_lines.length < lines.length
         File.write(project_path, filtered_lines.join)
         puts "✅ Removed libPods-bringessedelivery_partner.a references from project.pbxproj".green
+      end
+    end
+    
+    # Hyper SDK post_install script
+    fuse_path = "./Pods/HyperSDK/Fuse.rb"
+    clean_assets = false # Pass true to re-download all the assets
+    if File.exist?(fuse_path)
+      if system("ruby", fuse_path.to_s, clean_assets.to_s)
       end
     end
   end

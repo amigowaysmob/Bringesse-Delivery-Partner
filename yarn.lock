@@ -4698,6 +4698,7 @@ __metadata:
     babel-jest: ^29.6.3
     eslint: ^8.19.0
     formik: ^2.4.6
+    hyper-sdk-react: ^5.0.18
     i18next: ^23.16.4
     jest: ^29.6.3
     lodash: ^4.17.21
@@ -7190,6 +7191,16 @@ __metadata:
   version: 2.1.0
   resolution: "human-signals@npm:2.1.0"
   checksum: b87fd89fce72391625271454e70f67fe405277415b48bcc0117ca73d31fa23a4241787afdc8d67f5a116cf37258c052f59ea82daffa72364d61351423848e3b8
+  languageName: node
+  linkType: hard
+
+"hyper-sdk-react@npm:^5.0.18":
+  version: 5.0.18
+  resolution: "hyper-sdk-react@npm:5.0.18"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: d3da071934e883cd09bec16ae3729cf432e993b6d9443369ae7873409de8d78eec12d450f1dac5c858ccd1ad41faa0d8ba20af2fb1d3f6a6e658d37ec0a6f3db
   languageName: node
   linkType: hard
 

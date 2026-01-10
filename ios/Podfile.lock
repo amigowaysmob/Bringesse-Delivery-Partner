@@ -86,6 +86,15 @@ PODS:
   - hermes-engine (0.79.6):
     - hermes-engine/Pre-built (= 0.79.6)
   - hermes-engine/Pre-built (0.79.6)
+  - hyper-sdk-react (5.0.18):
+    - HyperSDK (= 2.2.2.8)
+    - React-Core
+    - React-RCTAppDelegate
+  - HyperCore (0.0.6)
+  - HyperSDK (2.2.2.8):
+    - HyperCore (= 0.0.6)
+    - JuspaySafeBrowser (= 0.1.87)
+  - JuspaySafeBrowser (0.1.87)
   - libavif/core (0.11.1)
   - lottie-ios (4.5.0)
   - lottie-react-native (7.3.4):
@@ -2550,6 +2559,7 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - GoogleUtilities
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
+  - hyper-sdk-react (from `../node_modules/hyper-sdk-react`)
   - lottie-react-native (from `../node_modules/lottie-react-native`)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCT-Folly/Fabric (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
@@ -2661,6 +2671,9 @@ SPEC REPOS:
     - FirebaseMessaging
     - GoogleDataTransport
     - GoogleUtilities
+    - HyperCore
+    - HyperSDK
+    - JuspaySafeBrowser
     - libavif
     - lottie-ios
     - nanopb
@@ -2693,6 +2706,8 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-2025-06-04-RNv0.79.3-7f9a871eefeb2c3852365ee80f0b6733ec12ac3b
+  hyper-sdk-react:
+    :path: "../node_modules/hyper-sdk-react"
   lottie-react-native:
     :path: "../node_modules/lottie-react-native"
   RCT-Folly:
@@ -2907,6 +2922,10 @@ SPEC CHECKSUMS:
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   hermes-engine: 44bb6fe76a6eb400d3a992e2d0b21946ae999fa9
+  hyper-sdk-react: f35ec660fdd9465caffcf5955ca6423e7c7cec97
+  HyperCore: 9c17ce1c59618111acdfbe5da261f0d522c1847b
+  HyperSDK: e41414e0d05ceb9bd0b8645ce370e1483890585e
+  JuspaySafeBrowser: 34d7a75466948086321c09c0a5f9028a46bf21b7
   libavif: 84bbb62fb232c3018d6f1bab79beea87e35de7b7
   lottie-ios: a881093fab623c467d3bce374367755c272bdd59
   lottie-react-native: 2d23fe8ac918240e52f40b0f4a3582017160d34f
@@ -3016,6 +3035,6 @@ SPEC CHECKSUMS:
   VisionCamera: 7187b3dac1ff3071234ead959ce311875748e14f
   Yoga: dc7c21200195acacb62fa920c588e7c2106de45e
 
-PODFILE CHECKSUM: b50cdc75636f39233561d77f84a7f5dc1b06b94f
+PODFILE CHECKSUM: 62aac486c347bf7a18573af296b9b08793da0b7c
 
 COCOAPODS: 1.16.2
