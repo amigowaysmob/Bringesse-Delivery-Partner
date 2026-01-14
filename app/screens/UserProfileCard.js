@@ -1,30 +1,22 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Pressable,
-  ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity,
+  Animated, Pressable, ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { COLORS } from '../resources/colors';
 import { hp, wp } from '../resources/dimensions';
-import { poppins } from '../resources/fonts';
+import { poppins } from '../resources/fonts'; 
 import { useSelector } from 'react-redux';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-
 const UserProfileCard = () => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const navigation = useNavigation();
-
   const profile = useSelector(state => state.Auth.profileDetails);
   const siteDetails = useSelector(state => state.Auth.siteDetails);
-
   const userName =
     `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() ||
     t('No name');
@@ -33,13 +25,10 @@ const UserProfileCard = () => {
     profile?.driver_image
       ? `${siteDetails?.media_url}drivers/images/${profile.driver_image}`
       : null;
-
   const [imageLoading, setImageLoading] = useState(true);
-
   const handleEditProfilePic = useCallback(() => {
     navigation.navigate('UpdateProfilePic');
   }, []);
-
   const handleEditProfile = useCallback(() => {
     navigation.navigate('EditProfile');
   }, []);
@@ -125,7 +114,7 @@ const UserProfileCard = () => {
           styles.card,
           {
             backgroundColor: COLORS[theme].viewBackground,
-            borderColor: COLORS[theme].accent ,
+            borderColor: COLORS[theme].accent,
           },
         ]}
       >
@@ -225,8 +214,6 @@ const UserProfileCard = () => {
             </TouchableOpacity>
           </Animated.View>
         </View>
-
-        {/* Arrow */}
         <Animated.View
           style={{
             opacity: arrowOpacity,
@@ -243,10 +230,7 @@ const UserProfileCard = () => {
     </Pressable>
   );
 };
-
 export default UserProfileCard;
-
-/* ---------------- Styles ---------------- */
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',

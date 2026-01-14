@@ -58,7 +58,7 @@ const LoginScreen = () => {
     // Validation
     if (!email) return setEmailError(t('Email is required.'));
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-    if (!emailPattern.test(email)) return setEmailError(t('Please enter a valid email address.'));
+    // if (!emailPattern.test(email)) return setEmailError(t('Please enter a valid email address.'));
     if (!password) return setPasswordError(t('Password is required.'));
     // if (password.length < 4) return setPasswordError(t('Password must be at least 6 characters.'));
     setIsLoading(true); // Start loader
@@ -66,7 +66,7 @@ const LoginScreen = () => {
     APP_REGISTER_LOGIN_API_CALL({
       request: {
         payload: {
-          email,
+          email: email.trim(),
           password,
           device_token: fcmToken,
           device_type: Platform.OS === 'ios' ? 0 : 1,
