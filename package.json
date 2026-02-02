@@ -40,7 +40,7 @@
     "polyline": "^0.2.0",
     "promise": "8.0.3",
     "react": "19.0.0",
-    "react-boilerplate-redux-saga-hoc": "1.4.54",
+    "react-boilerplate-redux-saga-hoc": "^1.10.24",
     "react-i18next": "^15.1.0",
     "react-native": "0.79.6",
     "react-native-3dcube-navigation": "^1.0.5",

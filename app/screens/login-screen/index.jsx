@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView, ScrollView, StyleSheet, TouchableWithoutFeedback, View,
-  TextInput, TouchableOpacity, Text, Platform, Modal, ActivityIndicator,
+  TextInput, TouchableOpacity, Text, Platform, Modal, ActivityIndicator,TextInput
 } from 'react-native';
 import { hp, wp } from '../../resources/dimensions';
 import { poppins } from '../../resources/fonts';
