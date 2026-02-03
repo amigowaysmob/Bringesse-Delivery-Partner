@@ -27,6 +27,8 @@ import UserPendingCount from '../../UserPendingCount';
 import UserDeliveryOrdersCount from '../../UserDeliveryOrdersCount copy';
 import WelcomeCard from '../../WelcomeCard';
 import CheckPaymentId from '../../CheckPaymentId';
+import InstructionModal from '../../InstructionModal';
+
 const GOOGLE_MAPS_APIKEY = 'AIzaSyD3aWLyn9qHavlshIy49b1Pi9jjKjIPMnc';
 const HomeScreen = () => {
   const { theme } = useTheme();
@@ -43,6 +45,28 @@ const HomeScreen = () => {
   const dispatch = useDispatch();
   const siteDetails = useSelector(state => state.Auth?.siteDetails);
   const navigation = useNavigation();
+
+   const [showInstruction,setShowInstruction] = useState(false);
+
+useEffect(()=>{
+  closeInstructionOnce();
+},[]);
+
+const closeInstructionOnce = async()=>{
+  try {
+    const seen = await AsyncStorage.getItem('INSTRUCTION_SEEN');
+    if(!seen){
+         setShowInstruction(true)
+    }
+  } catch (error) {
+    console.log('Error to show instruction',error)
+  }
+}
+
+const closeInstruction = async () => {
+  setShowInstruction(false);
+  await AsyncStorage.setItem('INSTRUCTION_SEEN', 'true');
+};
   // Ask for location permission
 
   const requestLocationPermission = async () => {
@@ -308,6 +332,10 @@ const HomeScreen = () => {
             profileStatus={profileDetails?.profile_status}
           />
         )}
+        <InstructionModal
+        visible={showInstruction}
+        onClose={closeInstruction}
+        />
       </View>
       <FlashMessage position="top" />
     </View>
