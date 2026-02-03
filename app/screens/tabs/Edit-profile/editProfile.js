@@ -170,6 +170,7 @@ const EditProfile = () => {
         {/* Mobile Verification */}
         <TouchableOpacity onPress={() => setVerifyModalVisible(true)} style={styles.fieldContainer}>
           <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>Mobile Number</Text>
+          <View pointerEvents="none">
           <TextInput
             style={styles.input}
             mode="outlined"
@@ -180,6 +181,7 @@ const EditProfile = () => {
             outlineColor={COLORS[theme].textPrimary}
             right={<TextInput.Icon icon="chevron-right" color={COLORS[theme].textPrimary} />}
           />
+          </View>
         </TouchableOpacity>
 
         {/* Location Picker */}

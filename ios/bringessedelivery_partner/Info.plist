@@ -72,10 +72,20 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need your location to show your position on the map and help you navigate to delivery locations.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+<string>This app needs permission to save photos to your gallery.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera to capture photos for delivery verification and profile setup.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>We need your location to track your position during deliveries and provide accurate navigation assistance.</string>
+	<string>This app needs background location to track your movement during deliveries.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Location is required for continuous tracking.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app uses your location to show your delivery route.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to upload delivery proof and profile images.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Allow tracking to receive timely delivery assignments and real-time route optimizations.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -88,6 +98,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 </dict>

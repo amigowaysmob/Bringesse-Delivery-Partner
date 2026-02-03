@@ -4765,6 +4765,7 @@ __metadata:
     react-native-svg-transformer: ^1.5.0
     react-native-tab-view: ^3.5.2
     react-native-toast-message: ^2.2.1
+    react-native-tracking-transparency: ^0.1.2
     react-native-vector-icons: ^10.1.0
     react-native-version-check: ^3.4.7
     react-native-vision-camera: ^4.7.3
@@ -11050,6 +11051,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 313fe6e6b6437b2384d13f8987a141f9aa2df0930a668628276ed5ea990917e7d953dfa1584aa4991326ee9430baab1b735adf0b4a9861e702996617a583cc33
+  languageName: node
+  linkType: hard
+
+"react-native-tracking-transparency@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "react-native-tracking-transparency@npm:0.1.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 972706c14929c3c158cd47dc908ba1c448f482f64a9a1fb2087374b5fbc4124d54dd678de7094d6ad866a75415479e6a120d3cc7e39f338fee27ee214a4b902a
   languageName: node
   linkType: hard
 

@@ -513,8 +513,11 @@ const RegisterScreen = () => {
                 {renderTextField('Location', formValues.location, text => handleChange('location', text), errors.location)}
                 {renderTextField('Email ID', formValues.email, text => handleChange('email', text), errors.email)}
                 {renderTextField('Referal Code', formValues.referal_code, text => handleChange('referal_code', text), errors?.referal_code, false, false)}
-                <TouchableOpacity onPress={() => setVerifyModalVisible(true)} style={styles.fieldContainer}>
+                <TouchableOpacity onPress={() => setVerifyModalVisible(true)} style={[styles.fieldContainer,{
+                    // backgroundColor:"red"
+                }]}>
                     <Text style={[styles.label, { color: COLORS[theme].textPrimary }]}>{'Mobile Number'}</Text>
+                    <View pointerEvents="none">
                     <TextInput
                         style={styles.input}
                         mode="outlined"
@@ -525,6 +528,7 @@ const RegisterScreen = () => {
                         outlineColor={errors.mobileNumber ? 'red' : COLORS[theme].textPrimary}
                         right={<TextInput.Icon icon="chevron-right" color={COLORS[theme].textPrimary} />}
                     />
+                    </View>
                 </TouchableOpacity>
                 {renderTextField('Password', formValues.password, text => handleChange('password', text), errors.password, true, true)}
                 {renderTextField('Confirm Password', formValues.confirmPassword, text => handleChange('confirmPassword', text), errors.confirmPassword, true)}
