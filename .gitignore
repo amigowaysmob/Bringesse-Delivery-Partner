@@ -43,3 +43,5 @@ yarn-error.log*
 
 # Bundle files
 *.bundle
+.yarn/install-state.gz
+ios/**/xcuserdata/

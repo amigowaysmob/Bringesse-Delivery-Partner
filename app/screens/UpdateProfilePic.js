@@ -12,7 +12,7 @@ import { poppins } from '../resources/fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import HeaderBar from '../components/header';
-import { launchCamera } from 'react-native-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import {
   check, request, PERMISSIONS, RESULTS, openSettings,
 } from 'react-native-permissions';
@@ -69,10 +69,10 @@ const UpdateProfilePic = () => {
     }
   };
   const handleOpenCamera = async () => {
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) return;
+    // const hasPermission = await requestCameraPermission();
+    // if (!hasPermission) return;
     try {
-      const result = await launchCamera({
+      const result = await launchImageLibrary({
         mediaType: 'photo',
         cameraType: 'front',
         quality: 1,

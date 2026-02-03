@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Alert,
+  Platform,
 } from 'react-native';
 import { hp, wp } from '../../../resources/dimensions';
 import { Icon } from 'react-native-paper';
@@ -152,39 +153,30 @@ const MoreScreen = () => {
   const accessToken = useSelector(state => state.Auth.accessToken);
   const dispatch = useDispatch();
   const siteDetails = useSelector(state => state.Auth.siteDetails);
-  const checkUpdate = async () => {
-    const currentVersion = VersionCheck?.getCurrentVersion();
-    // const latestVersion = await VersionCheck.getLatestVersion();
-    const latestVersion = await VersionCheck.getLatestVersion({ provider: 'playStore' });
-    if (shouldUpdate(currentVersion, latestVersion)) {
-      console.log('❗ Update required');
-    } else {
-      console.log('✅ App is up to date');
-    } if (currentVersion && latestVersion && currentVersion !== latestVersion) {
-      console.log('Update available!', currentVersion, latestVersion);
-    } else {
-      console.log('App is up to date.');
-    }
-  };
-  const shouldUpdate = (currentVersion, minVersion) => {
-    const current = currentVersion.split('.').map(Number); // [1, 0, 3]
-    const minimum = minVersion.split('.').map(Number);     // [1, 0, 5]
-    for (let i = 0; i < Math.max(current.length, minimum.length); i++) {
-      const cur = current[i] || 0;
-      const min = minimum[i] || 0;
-      if (cur < min) return true;  // Needs update
-      if (cur > min) return false; // Current is already newer
-    }
-    return false; // Versions are equal
-  };
+  const [showSubcriotion, setShowSubcriotion] = useState(false);
   useFocusEffect(
     useCallback(() => {
-      checkUpdate();
+      const getShowSuSCribMenu = async () => {
+        if (!profile?.driver_id) return;
+        try {
+          const data = await fetchData('configureSubscriptionMenu', 'POST', {
+            platform: Platform?.OS,
+            driver_id: profile?.driver_id,
+            // device_id: await DeviceInfo.getUniqueId(),
+          }, null);
+          if (data?.status !== 'false') {
+            setShowSubcriotion(data?.show);
+          }
+        } catch (error) {
+          console.error('profile API Error:', error);
+        } finally {
+        }
+      };
       const fetchProfileData = async () => {
-        console.log('profile', " JSON.stringify(data)");
         if (!accessToken || !profile?.driver_id) return;
         console.log('profile', '2');
         try {
+
           const data = await fetchData('profile/' + profile?.driver_id, 'GET', null, {
             Authorization: `${accessToken}`,
             driver_id: profile.driver_id,
@@ -209,6 +201,7 @@ const MoreScreen = () => {
         }
       };
       fetchProfileData();
+      getShowSuSCribMenu();
     }, [])
   );
   const SectionItem = ({ icon, label, navigationPath }) => (
@@ -258,6 +251,7 @@ const MoreScreen = () => {
           <SectionItem icon="store" label={`Pending Order`} navigationPath='PendingOrdersHistory' navigation={navigation} />
           <SectionItem icon="face-man-profile" label="Personal Information" navigationPath='PersonalInfoScreen' navigation={navigation} />
           {
+            showSubcriotion &&
             profile?.partner_type?.includes('Transport') &&
             <SectionItem icon="crown" navigation={navigation} label="subscription" navigationPath='SubscriptionList' />
           }
@@ -297,8 +291,6 @@ const MoreScreen = () => {
     </GestureHandlerRootView>
   );
 };
-
-// --- Common Styles ---
 const sectionRow = {
   flexDirection: 'row',
   paddingVertical: wp(4), paddingEnd: wp(4),

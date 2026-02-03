@@ -94,9 +94,8 @@ const VerifyPhoneModal = ({ visible, onClose, onVerified }) => {
     clearInterval(timerRef.current);
     onClose();
   };
-
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="none">
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
